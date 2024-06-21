@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5" style="padding-top: 100px;">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ minister.id|default:"Add Minister" }}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_first_name" class="form-label">First Name:</label>
+                    {{ form.first_name }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_last_name" class="form-label">Last Name:</label>
+                    {{ form.last_name }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_age" class="form-label">Age:</label>
+                    {{ form.age }}
+                </div>
+                <div class="mb-3 form-check">
+                    <label for="id_is_youth_minister" class="form-check-label">
+                        {{ form.is_youth_minister }}
+                        Is Youth Minister:
+                    </label>
+                </div>
+                <div class="mb-3">
+                    <label for="id_position" class="form-label">Position:</label>
+                    {{ form.position }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_email" class="form-label">Email:</label>
+                    {{ form.email }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_profile_image" class="form-label">Profile Image:</label>
+                    {{ form.profile_image }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_start_date" class="form-label">Start Date:</label>
+                    {{ form.start_date }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_disciples" class="form-label">Number of Disciples:</label>
+                    {{ form.disciples }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_phone_number" class="form-label">Phone Number:</label>
+                    {{ form.phone_number }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_address" class="form-label">Address:</label>
+                    {{ form.address }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_ministry" class="form-label">Ministry:</label>
+                    {{ form.ministry }}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">{{ minister.id|yesno:"Update,Add" }} Minister</button>
+                    {% if minister.id %}
+                    <button type="submit" name="delete" value="1" class="btn btn-danger">Delete Minister</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

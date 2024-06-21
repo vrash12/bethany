@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Member List{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 100px;">
+    <h2>Member List</h2>
+    <table id="membersTable" class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Middle Name</th>
+                <th>Last Name</th>
+                <th>Birthday</th>
+                <th>Age</th>
+                <th>FB Name</th>
+                <th>Invited By</th>
+                <th>Address</th>
+                <th>Contact Number</th>
+                <th>School</th>
+                <th>Course</th>
+                <th>Newcomer?</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.first_name }}</td>
+                <td>{{ member.middle_name }}</td>
+                <td>{{ member.last_name }}</td>
+                <td>{{ member.birthday|date:"Y-m-d" }}</td>
+                <td>{{ member.age }}</td>
+                <td>{{ member.fb_name }}</td>
+                <td>{{ member.invited_by }}</td>
+                <td>{{ member.address }}</td>
+                <td>{{ member.contact_number }}</td>
+                <td>{{ member.school }}</td>
+                <td>{{ member.course }}</td>
+                <td>{{ member.is_newcomer|yesno:"Yes,No" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'download_excel' %}" class="btn btn-success">Download Excel</a>
+</div>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
+<script>
+$(document).ready(function() {
+    $('#membersTable').DataTable({
+        responsive: true
+    });
+});
+</script>
+{% endblock %}

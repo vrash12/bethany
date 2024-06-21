@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Set Availability</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Save Availability</button>
+    </form>
+
+    <h3 class="mt-5">Current Availability</h3>
+    <table class="table mt-3">
+        <thead class="thead-light">
+            <tr>
+                <th>Minister</th>
+                <th>Day of Week</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for availability in availabilities %}
+            <tr>
+                <td>{{ availability.minister.first_name }} {{ availability.minister.last_name }}</td>
+                <td>{{ availability.day }}</td>
+                <td>{{ availability.start_time }}</td>
+                <td>{{ availability.end_time }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

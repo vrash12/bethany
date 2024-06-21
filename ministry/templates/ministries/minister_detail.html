@@ -1,0 +1,30 @@
+<!-- minister_detail.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container" style="margin-top: 50px;">
+    <h2>Minister Details</h2>
+    <div>
+        <strong>Name:</strong> {{ minister.first_name }} {{ minister.last_name }}<br>
+        <strong>Email:</strong> {{ minister.email }}<br>
+        <strong>Position:</strong> {{ minister.position }}<br>
+        <strong>Phone Number:</strong> {{ minister.phone_number }}<br>
+        <strong>Address:</strong> {{ minister.address }}<br>
+        <!-- Add more fields as needed -->
+    </div>
+
+    <!-- Update form -->
+    <form action="{% url 'minister_update' minister.id %}" method="post">
+        {% csrf_token %}
+        <!-- Add form fields here for updating information -->
+        <input type="submit" value="Update" class="btn btn-primary">
+    </form>
+
+    <!-- Delete button -->
+    <form action="{% url 'minister_detail' minister.id %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="delete" value="1">
+        <input type="submit" value="Delete" class="btn btn-danger">
+    </form>
+</div>
+{% endblock %}
