@@ -135,6 +135,7 @@ class SmallGroupAttendanceForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'attended': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+        
 
 class GivingForm(forms.ModelForm):
     GIVER_CHOICES = [
