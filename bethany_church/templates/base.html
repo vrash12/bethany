@@ -40,7 +40,8 @@
     <!-- Include Tempus Dominus JS for DateTime Picker -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>
 
-    <script>
+
+  <script>
     $(document).ready(function() {
         // Initialize Choices for select elements
         var elements = document.querySelectorAll('.member_search, #id_ministries');
@@ -117,96 +118,56 @@
                 console.error('Error loading the data:', error);
                 document.getElementById('chartTitle').textContent = 'Error loading attendance data.';
             });
-    });
 
-    // Fetch attendance records when the filter button is clicked
-    document.getElementById('filter-button').addEventListener('click', function() {
-        const filterDateInput = document.getElementById('filter_date');
-        const attendanceListContainer = document.querySelector('.attendance-list');
-        const selectedDate = filterDateInput.value;
+        // Fetch attendance records when the filter button is clicked
+        document.getElementById('filter-button').addEventListener('click', fetchAttendanceRecords);
 
-        if (!selectedDate) {
-            attendanceListContainer.innerHTML = '<p>Please select a date.</p>';
-            return;
-        }
+        function fetchAttendanceRecords() {
+            const filterDateInput = document.getElementById('filter_date');
+            const attendanceListContainer = document.querySelector('.attendance-list');
+            const selectedDate = filterDateInput.value;
 
-        fetch(`/get_attendance_records/?filter_date=${selectedDate}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'ok') {
-                    renderAttendanceTable(data.data, attendanceListContainer);
-                } else {
-                    attendanceListContainer.innerHTML = `<p>${data.message}</p>`;
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching attendance records:', error);
-                attendanceListContainer.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
-            });
-    });
+            if (!selectedDate) {
+                attendanceListContainer.innerHTML = '<p>Please select a date.</p>';
+                return;
+            }
 
-    function renderAttendanceTable(records, container) {
-        let table = `<table id="attendanceTable" class="display" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Member Name</th>
-                                <th>Date</th>
-                                <th>Service</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-        records.forEach(record => {
-            table += `<tr>
-                        <td>${record.member_name}</td>
-                        <td>${record.date}</td>
-                        <td>${record.service_name}</td>
-                        <td>${record.status}</td>
-                      </tr>`;
-        });
-        table += `</tbody></table>`;
-        container.innerHTML = table;
-        $('#attendanceTable').DataTable();  // Re-initialize DataTable after adding new rows
-    }
-
-
-    function fetchAttendanceRecords() {
-            var filterDate = $('#filter_date').val();
-            $.ajax({
-                url: "{% url 'get_attendance_records' %}",
-                data: {
-                    filter_date: filterDate
-                },
-                success: function(response) {
-                    if (response.status === 'ok') {
-                        var table = $('#attendanceTable').DataTable();
-                        table.clear();
-                        $.each(response.data, function(index, record) {
-                            table.row.add([
-                                record.name || 'N/A',
-                                record.date || 'N/A',
-                                record.service || 'N/A',
-                                record.status || 'N/A',
-                                record.type || 'N/A'
-                            ]).draw(false);
-                        });
+            fetch(`/get_attendance_records/?filter_date=${selectedDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        renderAttendanceTable(data.data);
                     } else {
-                        alert(response.message);
+                        attendanceListContainer.innerHTML = `<p>${data.message}</p>`;
                     }
-                },
-                error: function(xhr, status, error) {
-                    alert("An error occurred while fetching attendance records.");
-                }
+                })
+                .catch(error => {
+                    console.error('Error fetching attendance records:', error);
+                    attendanceListContainer.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
+                });
+        }
+
+        function renderAttendanceTable(records) {
+            const table = $('#attendanceTable').DataTable();
+            table.clear();
+            records.forEach(record => {
+                table.row.add([
+                    record.name || 'N/A',
+                    record.date || 'N/A',
+                    record.service || 'N/A',
+                    record.status || 'N/A',
+                    record.type || 'N/A'
+                ]).draw();
             });
         }
 
-    $(document).ready(function() {
-        // Initialize date picker for start date
-        $('#id_start_date').datepicker({
+        // Initialize date picker for filter date
+        $('#filter_date').datepicker({
             format: 'yyyy-mm-dd',
             autoclose: true
         });
     });
-    </script>
+</script>
+
 </body>
 </html>

@@ -38,7 +38,7 @@ from django.forms import modelformset_factory
 from .forms import SmallGroupMembershipForm
 from django.contrib.auth.decorators import login_required
 
-
+logger = logging.getLogger(__name__)
 
 def login_view(request):
     if request.method == 'POST':
@@ -224,41 +224,73 @@ def custom_serialize(queryset):
         list_results.append(result)
     return json.dumps(list_results)
 
+
 def get_attendance_records(request):
     filter_date = request.GET.get('filter_date')
-    if filter_date:
-        try:
-            member_attendance_records = Attendance.objects.filter(date=filter_date).select_related('member', 'service')
-            minister_attendance_records = MinisterAttendance.objects.filter(date=filter_date).select_related('minister', 'service')
+    if not filter_date:
+        logger.error("Date parameter is missing")
+        return JsonResponse({'status': 'error', 'message': 'Date parameter is missing'}, status=400)
+    
+    try:
+        member_attendance_records = Attendance.objects.filter(date=filter_date).select_related('member', 'service')
+        minister_attendance_records = MinisterAttendance.objects.filter(date=filter_date).select_related('minister', 'service')
 
-            records = [
-                {
-                    'id': f"member_{record.member.id}",
-                    'name': f"{record.member.first_name} {record.member.last_name}",
-                    'date': record.date.strftime('%Y-%m-%d'),
-                    'service': record.service.name if record.service else 'N/A',
-                    'status': 'Present' if record.status else 'Absent',
-                    'type': 'Member'
-                }
-                for record in member_attendance_records
-            ] + [
-                {
-                    'id': f"minister_{record.minister.id}",
-                    'name': f"{record.minister.first_name} {record.minister.last_name}",
-                    'date': record.date.strftime('%Y-%m-%d'),
-                    'service': record.service.name if record.service else 'N/A',
-                    'status': 'Present' if record.status else 'Absent',
-                    'type': 'Minister'
-                }
-                for record in minister_attendance_records
-            ]
+        records = []
 
-            return JsonResponse({'status': 'ok', 'data': records})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    return JsonResponse({'status': 'error', 'message': 'Date parameter is missing'}, status=400)
+        for record in member_attendance_records:
+            if record.member:
+                member_name = f"{record.member.first_name} {record.member.last_name}"
+                member_id = record.member.id
+            else:
+                member_name = 'Unknown'
+                member_id = 'undefined'
+                logger.warning(f"Member is undefined for record with date {record.date}")
 
+            service_name = record.service.name if record.service else 'N/A'
+            if not record.service:
+                logger.warning(f"Service is undefined for member {member_name} on date {record.date}")
 
+            status = 'Present' if record.status else 'Absent'
+            records.append({
+                'id': f"member_{member_id}",
+                'name': member_name,
+                'date': record.date.strftime('%Y-%m-%d'),
+                'service': service_name,
+                'status': status,
+                'type': 'Member'
+            })
+
+        for record in minister_attendance_records:
+            if record.minister:
+                minister_name = f"{record.minister.first_name} {record.minister.last_name}"
+                minister_id = record.minister.id
+            else:
+                minister_name = 'Unknown'
+                minister_id = 'undefined'
+                logger.warning(f"Minister is undefined for record with date {record.date}")
+
+            service_name = record.service.name if record.service else 'N/A'
+            if not record.service:
+                logger.warning(f"Service is undefined for minister {minister_name} on date {record.date}")
+
+            status = 'Present' if record.status else 'Absent'
+            records.append({
+                'id': f"minister_{minister_id}",
+                'name': minister_name,
+                'date': record.date.strftime('%Y-%m-%d'),
+                'service': service_name,
+                'status': status,
+                'type': 'Minister'
+            })
+
+        logger.debug(f"Records fetched: {records}")
+        return JsonResponse({'status': 'ok', 'data': records})
+    
+    except Exception as e:
+        logger.error(f"Error fetching attendance records: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    
 
 def add_member_success(request):
     return render(request, 'attendance/add_member_success.html')
