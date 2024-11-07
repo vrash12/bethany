@@ -1,6 +1,7 @@
 from django import forms
 from .models import Schedule, Minister, Ministry, Availability
 
+
 class AvailabilityForm(forms.ModelForm):
     class Meta:
         model = Availability
@@ -39,26 +40,23 @@ class MinisterForm(forms.ModelForm):
         }
 
 class ScheduleForm(forms.ModelForm):
-    start_time = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        input_formats=['%Y-%m-%dT%H:%M'],  # Adjusting the format to match HTML5 datetime-local input
-        label='Start Time'
+    time_slot = forms.ChoiceField(
+        choices=Schedule.TIME_SLOT_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Time Slot'
     )
-    end_time = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        input_formats=['%Y-%m-%dT%H:%M'],  # Adjusting the format to match HTML5 datetime-local input
-        label='End Time'
-    )
+
 
     class Meta:
         model = Schedule
-        fields = ['ministry', 'minister', 'location', 'duties', 'attended', 'start_time', 'end_time']
+        fields = ['ministry', 'minister', 'location', 'duties', 'date', 'time_slot', 'attended']
         widgets = {
             'ministry': forms.Select(attrs={'class': 'form-control'}),
             'minister': forms.Select(attrs={'class': 'form-control'}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'duties': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'attended': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
 class DateFilterForm(forms.Form):

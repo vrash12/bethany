@@ -1,207 +1,378 @@
+<!-- attendance/small_group_crud.html -->
 {% extends 'base.html' %}
 
+{% load widget_tweaks %}
+
+{% block title %}Manage Small Groups{% endblock %}
+
 {% block content %}
-  <div class="container" style="margin-top: 100px;">
-    <h1>Manage Small Groups</h1>
+<div class="mb-4" >
+  <h1>Manage Small Groups</h1>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#groupModal" id="createGroupBtn">
+    <i class="fas fa-plus"></i> Create New Group
+  </button>
+</div>
 
-    <div class="row">
-      <!-- Form for creating/updating small groups -->
-      <div class="col-md-6 mb-4">
-        <div class="card">
-          <div class="card-header">
-            <h2>{{ edit_group|yesno:"Edit Group,Create Group" }}</h2>
-          </div>
-          <div class="card-body">
-            <form method="post">
-              {% csrf_token %}
-              <div class="form-group">
-                {{ group_form.name.label_tag }}
-                {{ group_form.name }}
-              </div>
-              <div class="form-group">
-                {{ group_form.leader.label_tag }}
-                {{ group_form.leader }}
-              </div>
-              <div class="form-group">
-                {{ group_form.members.label_tag }}
-                {{ group_form.members }}
-              </div>
-              <div class="form-group">
-                {{ group_form.ministers.label_tag }}
-                {{ group_form.ministers }}
-              </div>
-              <button type="submit" class="btn btn-primary">Save</button>
-              {% if edit_group %}
-                <a href="{% url 'small_group_list_create' %}" class="btn btn-secondary">Cancel</a>
-              {% endif %}
-            </form>
-          </div>
+<!-- Small Groups Table -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h2>Small Groups</h2>
+  </div>
+  <div class="card-body">
+    <table id="smallGroupsTable" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Leader</th>
+          <th>Members</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group in page_obj %}
+        <tr>
+          <td>{{ group.name }}</td>
+          <td>{{ group.leader.first_name }} {{ group.leader.last_name }}</td>
+          <td>
+            <ul>
+              {% for membership in group.memberships.all %}
+                {% if membership.member %}
+                  <li>{{ membership.member.first_name }} {{ membership.member.last_name }}</li>
+                {% elif membership.minister %}
+                  <li>{{ membership.minister.first_name }} {{ membership.minister.last_name }} (Minister)</li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm btn-warning edit-group-btn" data-group-id="{{ group.pk }}">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <a href="{% url 'small_group_delete' group.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this group?');">
+              <i class="fas fa-trash-alt"></i> Delete
+            </a>
+            <button type="button" class="btn btn-sm btn-info record-attendance-btn" data-group-id="{{ group.pk }}">
+              <i class="fas fa-clipboard-list"></i> Record Attendance
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modals -->
+<!-- Group Modal -->
+<div class="modal fade" id="groupModal" tabindex="-1" aria-labelledby="groupModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="groupForm" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="groupModalLabel">Create Group</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-      </div>
+        <div class="modal-body">
+          <div id="groupFormErrors"></div>
+          <!-- Group Modal Form Fields -->
+          <div class="mb-3">
+            {{ group_form.name.label_tag }}
+            {% render_field group_form.name class="form-control" id="id_name" %}
+          </div>
+          <div class="mb-3">
+            {{ group_form.leader.label_tag }}
+            {% render_field group_form.leader class="form-control" id="id_leader" %}
+          </div>
 
-      <!-- Form for recording attendance -->
-      <div class="col-md-6 mb-4">
-        <div class="card">
-          <div class="card-header">
-            <h2>Record Attendance</h2>
+          <!-- Members checkboxes -->
+          <div class="mb-3">
+            {{ group_form.members.label_tag }}
+            <div>
+              {% for member in group_form.members.field.queryset %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="members" id="id_member_{{ member.pk }}" value="{{ member.pk }}">
+                  <label class="form-check-label" for="id_member_{{ member.pk }}">
+                    {{ member.first_name }} {{ member.last_name }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
           </div>
-          <div class="card-body">
-            <form method="post" action="{% url 'record_attendance' %}">
-              {% csrf_token %}
-              {% if edit_group %}
-                <input type="hidden" name="small_group_id" value="{{ edit_group.id }}">
-              {% endif %}
-              <div class="form-group">
-                {{ attendance_form.date.label_tag }}
-                {{ attendance_form.date }}
-              </div>
-              <div class="form-group">
-                {{ attendance_form.members.label_tag }}
-                {{ attendance_form.members }}
-              </div>
-              <div class="form-group">
-                {{ attendance_form.ministers.label_tag }}
-                {{ attendance_form.ministers }}
-              </div>
-              <div class="form-check">
-                {{ attendance_form.attended.label_tag }}
-                {{ attendance_form.attended }}
-              </div>
-              <button type="submit" class="btn btn-primary">Record Attendance</button>
-            </form>
+
+          <!-- Ministers checkboxes -->
+          <div class="mb-3">
+            {{ group_form.ministers.label_tag }}
+            <div>
+              {% for minister in group_form.ministers.field.queryset %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="ministers" id="id_minister_{{ minister.pk }}" value="{{ minister.pk }}">
+                  <label class="form-check-label" for="id_minister_{{ minister.pk }}">
+                    {{ minister.first_name }} {{ minister.last_name }} (Minister)
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
           </div>
+
+          <input type="hidden" id="groupId" name="group_id" value="">
         </div>
-      </div>
-    </div>
-
-    <!-- Search Filter -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <form method="get" class="form-inline">
-          <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="q" value="{{ request.GET.q }}">
-          <button class="btn btn-outline-success" type="submit">Search</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- List of small groups -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h2>Small Groups</h2>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Leader</th>
-              <th scope="col">Members</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for group in page_obj %}
-              <tr>
-                <td>{{ group.name }}</td>
-                <td>{{ group.leader.first_name }} {{ group.leader.last_name }}</td>
-                <td>
-                  <ul>
-                    {% for membership in group.memberships.all %}
-                      {% if membership.member %}
-                        <li>{{ membership.member.first_name }} {{ membership.member.last_name }}</li>
-                      {% elif membership.minister %}
-                        <li>{{ membership.minister.first_name }} {{ membership.minister.last_name }} (Minister)</li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-                </td>
-                <td>
-                  <a href="{% url 'small_group_list_create_with_pk' group.pk %}" class="btn btn-sm btn-warning">Edit</a>
-                  <a href="{% url 'small_group_delete' group.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this group?');">Delete</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-
-        <!-- Pagination Controls -->
-        <nav aria-label="Page navigation">
-          <ul class="pagination">
-            {% if page_obj.has_previous %}
-              <li class="page-item">
-                <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" aria-label="First">
-                  <span aria-hidden="true">&laquo;&laquo;</span>
-                </a>
-              </li>
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" aria-label="Previous">
-                  <span aria-hidden="true">&laquo;</span>
-                </a>
-              </li>
-            {% endif %}
-            {% for num in page_obj.paginator.page_range %}
-              <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
-              </li>
-            {% endfor %}
-            {% if page_obj.has_next %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" aria-label="Next">
-                  <span aria-hidden="true">&raquo;</span>
-                </a>
-              </li>
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" aria-label="Last">
-                  <span aria-hidden="true">&raquo;&raquo;</span>
-                </a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-      </div>
-    </div>
-
-    <!-- List of small group attendances -->
-    <div class="card">
-      <div class="card-header">
-        <h2>Small Group Attendances</h2>
-      </div>
-      <div class="card-body">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Small Group</th>
-              <th scope="col">Members Attended</th>
-              <th scope="col">Ministers Attended</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for attendance in attendance_list %}
-              <tr>
-                <td>{{ attendance.date }}</td>
-                <td>{{ attendance.small_group.name }}</td>
-                <td>
-                  <ul>
-                    {% for member in attendance.members.all %}
-                      <li>{{ member.first_name }} {{ member.last_name }}</li>
-                    {% endfor %}
-                  </ul>
-                </td>
-                <td>
-                  <ul>
-                    {% for minister in attendance.ministers.all %}
-                      <li>{{ minister.first_name }} {{ minister.last_name }}</li>
-                    {% endfor %}
-                  </ul>
-                </td>
-                <td>{{ attendance.attended|yesno:"Attended,Absent" }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Group</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="attendanceForm" method="post">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="attendanceModalLabel">Record Attendance</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="attendanceFormErrors"></div>
+          <div class="mb-3">
+            {{ attendance_form.date.label_tag }}
+            {% render_field attendance_form.date class="form-control" id="id_date" %}
+          </div>
+          <div class="mb-3 form-check">
+            {% render_field attendance_form.attended class="form-check-input" id="id_attended" %}
+            {{ attendance_form.attended.label_tag }}
+          </div>
+          <input type="hidden" id="attendanceGroupId" name="small_group_id" value="">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Record Attendance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+  <!-- Toasts will be appended here -->
+</div>
+
+<!-- Small Group Attendances Table -->
+<div class="card">
+  <div class="card-header">
+    <h2>Small Group Attendances</h2>
+  </div>
+  <div class="card-body">
+    <table id="attendanceTable" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Small Group</th>
+          <th>Members Attended</th>
+          <th>Ministers Attended</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attendance in attendance_list %}
+        <tr>
+          <td>{{ attendance.date }}</td>
+          <td>{{ attendance.small_group.name }}</td>
+          <td>
+            <ul>
+              {% for member in attendance.members.all %}
+              <li>{{ member.first_name }} {{ member.last_name }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td>
+            <ul>
+              {% for minister in attendance.ministers.all %}
+              <li>{{ minister.first_name }} {{ minister.last_name }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function() {
+    // Initialize DataTables
+    $('#smallGroupsTable').DataTable({
+      responsive: true
+    });
+    $('#attendanceTable').DataTable({
+      responsive: true
+    });
+
+    // CSRF token setup for AJAX
+    function getCSRFToken() {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, 'csrftoken='.length) === 'csrftoken=') {
+            cookieValue = decodeURIComponent(cookie.substring('csrftoken='.length));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Function to show Bootstrap Toasts
+    function showToast(message, type) {
+      const toastHtml = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+          <div class="d-flex">
+            <div class="toast-body">
+              ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>`;
+      $('#toast-container').append(toastHtml);
+      const toastElement = $('#toast-container .toast').last();
+      const toast = new bootstrap.Toast(toastElement[0]);
+      toast.show();
+      // Remove the toast after it's hidden
+      toastElement.on('hidden.bs.toast', function() {
+        $(this).remove();
+      });
+    }
+
+    // Open Create Group Modal
+    $('#createGroupBtn').click(function() {
+      $('#groupForm')[0].reset();
+      $('#groupFormErrors').empty();
+      $('#groupId').val('');
+      $('#groupModalLabel').text('Create Group');
+      $('#groupModal').modal('show');
+    });
+
+    // Edit Group
+    $('.edit-group-btn').click(function() {
+      console.log('Edit button clicked.');
+      const groupId = $(this).data('group-id');
+      $.ajax({
+        url: "{% url 'small_group_detail' %}",
+        data: {
+          'group_id': groupId
+        },
+        success: function(data) {
+          console.log('Received data:', data);
+          // Populate form with data
+          $('#groupId').val(data.id);
+          $('#id_name').val(data.name);
+          $('#id_leader').val(data.leader_id);
+          // Uncheck all members and ministers first
+          $('input[name="members"]').prop('checked', false);
+          $('input[name="ministers"]').prop('checked', false);
+          // Check the ones that are part of the group
+          data.members.forEach(function(memberId) {
+            $(`#id_member_${memberId}`).prop('checked', true);
+          });
+          data.ministers.forEach(function(ministerId) {
+            $(`#id_minister_${ministerId}`).prop('checked', true);
+          });
+          $('#groupModalLabel').text('Edit Group');
+          $('#groupModal').modal('show');
+        },
+        error: function(xhr) {
+          console.error('Error fetching group details.');
+          showToast('Failed to fetch group details.', 'danger');
+        }
+      });
+    });
+
+    // Submit Group Form via AJAX
+    $('#groupForm').submit(function(event) {
+      event.preventDefault();
+      const formData = $(this).serialize();
+      console.log('Submitting Group Form:', formData);
+      $.ajax({
+        url: "{% url 'small_group_list_create' %}",
+        method: 'POST',
+        data: formData,
+        headers: {
+          'X-CSRFToken': getCSRFToken()
+        },
+        success: function(response) {
+          console.log('Group saved successfully:', response);
+          $('#groupModal').modal('hide');
+          showToast(response.message, 'success');
+          location.reload();
+        },
+        error: function(xhr) {
+          console.error('Error saving group:', xhr);
+          const errors = xhr.responseJSON.errors;
+          let errorsHtml = '<div class="alert alert-danger"><ul>';
+          $.each(errors, function(key, value) {
+            errorsHtml += '<li>' + value[0] + '</li>';
+          });
+          errorsHtml += '</ul></div>';
+          $('#groupFormErrors').html(errorsHtml);
+          showToast('Error saving group.', 'danger');
+        }
+      });
+    });
+
+    // Record Attendance
+    $('.record-attendance-btn').click(function() {
+      console.log('Record Attendance button clicked.');
+      const groupId = $(this).data('group-id');
+      $('#attendanceGroupId').val(groupId);
+      $('#attendanceForm')[0].reset();
+      $('#attendanceFormErrors').empty();
+      $('#attendanceModal').modal('show');
+    });
+
+    // Submit Attendance Form via AJAX
+    $('#attendanceForm').submit(function(event) {
+      event.preventDefault();
+      const formData = $(this).serialize();
+      console.log('Submitting Attendance Form:', formData);
+      $.ajax({
+        url: "{% url 'record_attendance' %}",
+        method: 'POST',
+        data: formData,
+        headers: {
+          'X-CSRFToken': getCSRFToken()
+        },
+        success: function(response) {
+          console.log('Attendance recorded successfully:', response);
+          $('#attendanceModal').modal('hide');
+          showToast(response.message, 'success');
+          location.reload();
+        },
+        error: function(xhr) {
+          console.error('Error recording attendance:', xhr);
+          if (xhr.responseJSON && xhr.responseJSON.errors) {
+            const errors = xhr.responseJSON.errors;
+            let errorsHtml = '<div class="alert alert-danger"><ul>';
+            $.each(errors, function(key, value) {
+              errorsHtml += '<li>' + value[0] + '</li>';
+            });
+            errorsHtml += '</ul></div>';
+            $('#attendanceFormErrors').html(errorsHtml);
+          } else {
+            $('#attendanceFormErrors').html('<div class="alert alert-danger">An unexpected error occurred.</div>');
+          }
+          showToast('Error recording attendance.', 'danger');
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

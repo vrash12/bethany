@@ -1,173 +1,240 @@
+<!-- C:\Users\MAURICIO\Documents\bethany_church\bethany_church\templates\base.html -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bethany Church</title>
-    <!-- Include Bootstrap CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bethany Church{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Include Choices.js CSS -->
+
+    <!-- Choices.js CSS -->
     <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet" />
-    <!-- Include DataTables CSS -->
+
+    <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <!-- Include Tui Calendar CSS -->
+
+    <!-- TUI Calendar CSS -->
     <link href="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.css" rel="stylesheet" />
-    <!-- Include Bootstrap Datepicker CSS -->
+
+    <!-- Select2 CSS -->
+    <!-- Updated to stable version 4.0.13 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <!-- Select2 Bootstrap 5 Theme CSS -->
+    <!-- Moved to <head> and after Select2 CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+        <!-- Or for RTL support -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" />
+
+        
+    <!-- Bootstrap Datepicker CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" rel="stylesheet"/>
+
+    <!-- Tempus Dominus Bootstrap 4 CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" rel="stylesheet"/>
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <!-- Custom Styles -->
+    <style>
+        /* Apply Open Sans to the entire body for readability */
+        body {
+            font-family: 'Open Sans', sans-serif;
+            margin-top: 90px;
+            padding: 0;
+            background-color: #f0f2f5;
+            
+        }
+
+        /* Apply Playfair Display for headings and navigation links for elegance */
+        h1, h2, h3, h4, h5, .nav-links a {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Style for buttons, inputs, and selects to match the new font */
+        button, input, select {
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        /* Additional Custom Styles */
+        .container {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+
+  
+
+        nav {
+            background-color: #FF8748;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        nav img {
+            height: 50px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .menu-icon {
+            display: none;
+            font-size: 30px;
+            cursor: pointer;
+            margin-left: auto;
+            color: white;
+        }
+
+        .sub-header {
+            background-color: #28a745;
+            padding: 5px 30px;
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 65px;
+            width: 100%;
+            z-index: 999;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                background-color: #FF8748;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                padding: 20px 0;
+                box-shadow: 0px 8px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .menu-icon {
+                display: block;
+            }
+
+            .nav-links a {
+                margin: 10px 0;
+                text-align: center;
+                padding: 10px 0;
+            }
+        }
+
+        /* Custom CSS to fix Select2 z-index within modals */
+        .select2-container--bootstrap-5 .select2-dropdown {
+            z-index: 9999; /* Higher than Bootstrap modals */
+        }
+        .nav-links a.active {
+    color: #000000; /* Highlight color */
+    font-weight: bold;
+    border-bottom: 2px solid #d7cec9; /* Optional underline */
+}
+
+    </style>
+
+    {% block extra_css %}
+    <!-- Additional CSS can be included here by child templates -->
+    {% endblock %}
 </head>
 <body>
-    <!-- Your Navbar placeholder -->
+    <!-- Navbar -->
     {% include 'includes/navbar.html' %}
 
-    {% block content %}
-    <!-- Page-specific content will go here -->
-    {% endblock %}
+    <!-- Main Content -->
+    <div class="container">
+        {% block content %}
+        <!-- Page-specific content will go here -->
+        {% endblock %}
+    </div>
 
-    <!-- Include jQuery -->
+    <!-- Toast Container -->
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3">
+            <!-- Toasts will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Include Bootstrap Bundle JS -->
+
+    <!-- Bootstrap Bundle JS (Includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Include Choices.js JS -->
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    <!-- Include DataTables JS -->
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <!-- Include Tui Calendar JS -->
+
+    <!-- Select2 JS -->
+    <!-- Updated to stable version 4.0.13 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+    <!-- Moment.js (Required for Tempus Dominus and TUI Calendar) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+    <!-- TUI Code Snippet JS (Required by TUI Calendar) -->
+    <script src="https://uicdn.toast.com/tui.code-snippet/latest/tui-code-snippet.js"></script>
+
+    <!-- TUI Calendar JS -->
     <script src="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.js"></script>
-    <!-- Include Bootstrap Datepicker JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-    <!-- Include Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Include Tempus Dominus JS for DateTime Picker -->
+
+    <!-- Tempus Dominus Bootstrap 4 JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js"></script>
 
+    <!-- Choices.js JS -->
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-  <script>
-    $(document).ready(function() {
-        // Initialize Choices for select elements
-        var elements = document.querySelectorAll('.member_search, #id_ministries');
-        elements.forEach(function(element) {
-            new Choices(element, {
-                removeItemButton: true,
-            });
-        });
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
-        // Set up CSRF token for AJAX
-        function getCSRFToken() {
-            let cookieValue = null;
-            const cookies = document.cookie.split(';');
-            for (let i = 0; cookies[i]; i++) {
-                let cookie = cookies[i].trim();
-                if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
-                    break;
-                }
-            }
-            return cookieValue;
-        }
+    <!-- Bootstrap Datepicker JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!/^http:.*/.test(settings.url) && !/^https:.*/.test(settings.url)) {
-                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
-                }
-            }
-        });
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        // Initialize DataTable
-        $('#attendanceTable').DataTable();
-
-        // Fetch last Sunday's attendance data for the chart
-        fetch('{% url "last_sunday_attendance" %}')
-            .then(response => response.json())
-            .then(data => {
-                const ctx = document.getElementById('attendanceChart').getContext('2d');
-                if (!ctx) {
-                    console.error('Canvas context not found.');
-                    return;
-                }
-                const attendanceChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Attendance Count',
-                            data: data.attendance,
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-
-                if (data.lastSunday) {
-                    const lastSundayDate = new Date(data.lastSunday);
-                    const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-                    document.getElementById('chartTitle').textContent = 'Attendance for ' + lastSundayDate.toLocaleDateString('en-US', options);
-                } else {
-                    document.getElementById('chartTitle').textContent = 'No data available for last Sunday';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading the data:', error);
-                document.getElementById('chartTitle').textContent = 'Error loading attendance data.';
-            });
-
-        // Fetch attendance records when the filter button is clicked
-        document.getElementById('filter-button').addEventListener('click', fetchAttendanceRecords);
-
-        function fetchAttendanceRecords() {
-            const filterDateInput = document.getElementById('filter_date');
-            const attendanceListContainer = document.querySelector('.attendance-list');
-            const selectedDate = filterDateInput.value;
-
-            if (!selectedDate) {
-                attendanceListContainer.innerHTML = '<p>Please select a date.</p>';
-                return;
-            }
-
-            fetch(`/get_attendance_records/?filter_date=${selectedDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        renderAttendanceTable(data.data);
-                    } else {
-                        attendanceListContainer.innerHTML = `<p>${data.message}</p>`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching attendance records:', error);
-                    attendanceListContainer.innerHTML = `<p>Error fetching data. Please try again later.</p>`;
-                });
-        }
-
-        function renderAttendanceTable(records) {
-            const table = $('#attendanceTable').DataTable();
-            table.clear();
-            records.forEach(record => {
-                table.row.add([
-                    record.name || 'N/A',
-                    record.date || 'N/A',
-                    record.service || 'N/A',
-                    record.status || 'N/A',
-                    record.type || 'N/A'
-                ]).draw();
-            });
-        }
-
-        // Initialize date picker for filter date
-        $('#filter_date').datepicker({
-            format: 'yyyy-mm-dd',
-            autoclose: true
-        });
-    });
-</script>
-
+    {% block extra_js %}
+    <!-- Additional JS can be included here by child templates -->
+    {% endblock %}
 </body>
 </html>

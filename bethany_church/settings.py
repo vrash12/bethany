@@ -9,10 +9,10 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+#bethany_church/settings.py
 from pathlib import Path
 import os
-
+import logging 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'schedule',
     'crispy_forms',	
     'crispy_bootstrap5',
+       'widget_tweaks',
 
 ]
 
@@ -98,7 +99,10 @@ DATABASES = {
 
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
+
+
+LOGIN_REDIRECT_URL = '/admin_home/'
+
 LOGOUT_REDIRECT_URL = 'login'
 
 
@@ -124,6 +128,23 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.template': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -139,8 +160,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = '/includes/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'bethany_church/templates/includes'),]
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

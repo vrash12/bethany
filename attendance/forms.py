@@ -1,3 +1,4 @@
+#attendance/forms.py
 from django import forms
 from .models import Member, Attendance, Service, SmallGroup, SmallGroupMembership, SmallGroupAttendance, Giving
 from ministry.models import Minister
@@ -7,7 +8,7 @@ from crispy_forms.layout import Layout
 class MemberForm(forms.ModelForm):
     class Meta:
         model = Member
-        fields = ['first_name', 'last_name', 'middle_name', 'birthday', 'age', 'fb_name', 'invited_by', 'address', 'contact_number', 'is_youth', 'school', 'course', 'is_newcomer']
+        fields = ['first_name', 'last_name', 'middle_name', 'birthday', 'age', 'fb_name', 'invited_by', 'address', 'contact_number', 'is_youth', 'school', 'course', 'is_newcomer', 'gender']
 
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -23,6 +24,7 @@ class MemberForm(forms.ModelForm):
             'school': forms.TextInput(attrs={'class': 'form-control'}),
             'course': forms.TextInput(attrs={'class': 'form-control'}),
             'is_newcomer': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'gender' : forms.Select(attrs={'class': 'form-control'}),
         }
 
 class AttendanceForm(forms.ModelForm):
@@ -117,20 +119,9 @@ class SmallGroupMembershipForm(forms.ModelForm):
 
 
 class SmallGroupAttendanceForm(forms.ModelForm):
-    members = forms.ModelMultipleChoiceField(
-        queryset=Member.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=False
-    )
-    ministers = forms.ModelMultipleChoiceField(
-        queryset=Minister.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=False
-    )
-
     class Meta:
         model = SmallGroupAttendance
-        fields = ['date', 'members', 'ministers', 'attended']
+        fields = ['date', 'attended']  # Only include date and attended fields
         widgets = {
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'attended': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

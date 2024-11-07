@@ -1,66 +1,154 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container" style="margin-top: 100px;">
-    <h2>Ministry List</h2>
-    <form method="get" action="">
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Filter</button>
+<div class="container mt-5">
+    <h2 class="mb-4">Ministry List</h2>
+
+    <!-- Filter Form -->
+    <form id="filterForm" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                {{ form.field_name.label_tag }}
+                {{ form.field_name }}
+            </div>
+            <!-- Add more fields as needed -->
+            <div class="col-md-2 align-self-end">
+                <button type="button" id="filterButton" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </div>
     </form>
-    <div class="mt-3">
-        <a href="{% url 'minister_add' %}" class="btn btn-success">Add Minister</a>
-        <a href="{% url 'schedule_create' %}" class="btn btn-warning">Schedule Calendar</a>
+
+    <!-- Actions -->
+    <div class="mb-3 d-flex justify-content-between">
+        <div>
+            <a href="{% url 'minister_add' %}" class="btn btn-success me-2">
+                <i class="fas fa-user-plus"></i> Add Minister
+            </a>
+            <a href="{% url 'schedule_create' %}" class="btn btn-warning">
+                <i class="fas fa-calendar-alt"></i> Schedule Calendar
+            </a>
+        </div>
+        <div>
+            <button id="exportButton" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+            <button id="deleteButton" class="btn btn-outline-danger">
+                <i class="fas fa-trash-alt"></i> Delete Selected
+            </button>
+        </div>
     </div>
-    <table class="table mt-3">
-        <thead>
-            <tr>
-                <th>Minister Name</th>
-                <th>Ministry</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for minister in ministers %}
-            <tr>
-                <td>{{ minister.first_name }} {{ minister.last_name }}</td>
-                <td>{{ minister.ministry.name }}</td>
-                <td>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ministerModal" data-id="{{ minister.id }}">
-                        View
-                    </button>
-                    <a href="{% url 'minister_manage' minister.id %}" class="btn btn-secondary">Manage</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <!-- Minister Table -->
+    <div class="table-responsive">
+        <table id="ministerTable" class="table table-striped table-bordered nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th>Minister Name</th>
+                    <th>Ministry</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for minister in ministers %}
+                <tr data-id="{{ minister.id }}">
+                    <td><input type="checkbox" class="selectRow"></td>
+                    <td>{{ minister.first_name }} {{ minister.last_name }}</td>
+                    <td>{{ minister.ministry.name }}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-primary me-1 viewMinister" data-id="{{ minister.id }}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <a href="{% url 'minister_manage' minister.id %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-edit"></i> Manage
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<!-- Modal -->
+<!-- Minister Details Modal -->
 <div class="modal fade" id="ministerModal" tabindex="-1" aria-labelledby="ministerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="ministerModalLabel">Minister Details</h5>
+                <h5 class="modal-title">Minister Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="portfolio">
-                    <div class="portfolio-image text-center">
-                        <img id="modalProfileImage" src="" alt="Profile Image" class="img-fluid rounded-circle" style="width: 150px; height: 150px;">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs" id="ministerTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="basic-info-tab" data-bs-toggle="tab" href="#basicInfo" role="tab">Basic Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="additional-info-tab" data-bs-toggle="tab" href="#additionalInfo" role="tab">Additional Info</a>
+                    </li>
+                </ul>
+                <!-- Tab Content -->
+                <div class="tab-content mt-3">
+                    <div class="tab-pane fade show active" id="basicInfo" role="tabpanel">
+                        <!-- Basic Info Content -->
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <img id="modalProfileImage" src="" alt="Profile Image" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px;">
+                                <h4 id="modalFullName"></h4>
+                                <p><strong>Position:</strong> <span id="modalPosition"></span></p>
+                            </div>
+                            <div class="col-md-8">
+                                <table class="table table-borderless">
+                                    <tbody>
+                                        <tr>
+                                            <th>Age:</th>
+                                            <td id="modalAge"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Is Youth Minister:</th>
+                                            <td id="modalIsYouthMinister"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Email:</th>
+                                            <td id="modalEmail"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Start Date:</th>
+                                            <td id="modalStartDate"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Number of Disciples:</th>
+                                            <td id="modalDisciples"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="portfolio-details mt-4">
-                        <p><strong>First Name:</strong> <span id="modalFirstName"></span></p>
-                        <p><strong>Last Name:</strong> <span id="modalLastName"></span></p>
-                        <p><strong>Age:</strong> <span id="modalAge"></span></p>
-                        <p><strong>Is Youth Minister:</strong> <span id="modalIsYouthMinister"></span></p>
-                        <p><strong>Position:</strong> <span id="modalPosition"></span></p>
-                        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
-                        <p><strong>Start Date:</strong> <span id="modalStartDate"></span></p>
-                        <p><strong>Number of Disciples:</strong> <span id="modalDisciples"></span></p>
-                        <p><strong>Phone Number:</strong> <span id="modalPhoneNumber"></span></p>
-                        <p><strong>Address:</strong> <span id="modalAddress"></span></p>
-                        <p><strong>Ministry:</strong> <span id="modalMinistry"></span></p>
+                    <div class="tab-pane fade" id="additionalInfo" role="tabpanel">
+                        <!-- Additional Info Content -->
+                        <table class="table table-borderless mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>Phone Number:</th>
+                                    <td id="modalPhoneNumber"></td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td id="modalAddress"></td>
+                                </tr>
+                                <tr>
+                                    <th>Ministry:</th>
+                                    <td id="modalMinistry"></td>
+                                </tr>
+                                <tr>
+                                    <th>Notes:</th>
+                                    <td id="modalNotes"></td>
+                                </tr>
+                                <!-- Add more fields as necessary -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -68,48 +156,90 @@
     </div>
 </div>
 
-<style>
-    .portfolio {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+{% endblock %}
 
-    .portfolio-details p {
-        font-size: 16px;
-        margin: 5px 0;
-    }
-
-    .portfolio-image img {
-        border: 2px solid #ddd;
-        padding: 5px;
-        background-color: #f8f9fa;
-    }
-</style>
-
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var ministerModal = document.getElementById('ministerModal');
-        ministerModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var ministerId = button.getAttribute('data-id');
-            
-            fetch(`/minister_detail/${ministerId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('modalProfileImage').src = data.profile_image;
-                    document.getElementById('modalFirstName').innerText = data.first_name;
-                    document.getElementById('modalLastName').innerText = data.last_name;
-                    document.getElementById('modalAge').innerText = data.age;
-                    document.getElementById('modalIsYouthMinister').innerText = data.is_youth_minister ? 'Yes' : 'No';
-                    document.getElementById('modalPosition').innerText = data.position;
-                    document.getElementById('modalEmail').innerText = data.email;
-                    document.getElementById('modalStartDate').innerText = data.start_date;
-                    document.getElementById('modalDisciples').innerText = data.disciples;
-                    document.getElementById('modalPhoneNumber').innerText = data.phone_number;
-                    document.getElementById('modalAddress').innerText = data.address;
-                    document.getElementById('modalMinistry').innerText = data.ministry.name;
-                });
+    $(document).ready(function() {
+        // Initialize DataTable with additional features
+        var table = $('#ministerTable').DataTable({
+            responsive: true,
+            dom: 'Bfrtip',
+            buttons: [
+                'excel', 'pdf', 'print'
+            ]
+        });
+
+        // Select/Deselect All Rows
+        $('#selectAll').click(function() {
+            var rows = table.rows({ 'search': 'applied' }).nodes();
+            $('input[type="checkbox"].selectRow', rows).prop('checked', this.checked);
+        });
+
+        // Individual Row Selection
+        $('#ministerTable tbody').on('change', 'input[type="checkbox"].selectRow', function() {
+            if (!this.checked) {
+                var el = $('#selectAll').get(0);
+                if (el && el.checked && ('indeterminate' in el)) {
+                    el.indeterminate = true;
+                }
+            }
+        });
+
+        // Batch Delete Action
+        $('#deleteButton').click(function() {
+            var selectedIds = [];
+            $('input.selectRow:checked').each(function() {
+                selectedIds.push($(this).closest('tr').data('id'));
+            });
+            if (selectedIds.length > 0) {
+                // Implement delete logic here
+                alert('Deleting ministers with IDs: ' + selectedIds.join(', '));
+            } else {
+                alert('No ministers selected.');
+            }
+        });
+
+        // Export Button Action
+        $('#exportButton').click(function() {
+            table.button('.buttons-excel').trigger();
+        });
+
+        // Dynamic Filtering
+        $('#filterButton').click(function() {
+            var formData = $('#filterForm').serialize();
+            $.ajax({
+                url: "{% url 'minister_list_ajax' %}",
+                data: formData,
+                success: function(data) {
+                    table.clear().rows.add(data.ministers).draw();
+                }
+            });
+        });
+
+        // Minister Details Modal Logic
+        $('#ministerTable').on('click', '.viewMinister', function() {
+            var ministerId = $(this).data('id');
+            // Fetch minister details via AJAX
+            $.ajax({
+                url: `/minister_detail/${ministerId}/`,
+                method: 'GET',
+                success: function(data) {
+                    $('#modalProfileImage').attr('src', data.profile_image);
+                    $('#modalFullName').text(`${data.first_name} ${data.last_name}`);
+                    $('#modalAge').text(data.age);
+                    $('#modalIsYouthMinister').text(data.is_youth_minister ? 'Yes' : 'No');
+                    $('#modalPosition').text(data.position);
+                    $('#modalEmail').text(data.email);
+                    $('#modalStartDate').text(data.start_date);
+                    $('#modalDisciples').text(data.disciples);
+                    $('#modalPhoneNumber').text(data.phone_number);
+                    $('#modalAddress').text(data.address);
+                    $('#modalMinistry').text(data.ministry.name);
+                    $('#modalNotes').text(data.notes);
+                    $('#ministerModal').modal('show');
+                }
+            });
         });
     });
 </script>

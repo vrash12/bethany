@@ -1,29 +1,30 @@
+<!--ministries/schedule_form.html-->
 {% extends 'base.html' %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 style="margin-top: 100px;">Assign Minister to Schedule</h2>
+    <h2 class="mb-4">Assign Minister to Schedule</h2>
 
-    <form method="get" class="mb-5">
-        <div class="row">
-            <div class="col-md-4">
-                {{ date_filter_form.date.label_tag }}
-                {{ date_filter_form.date }}
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </div>
+    <!-- Date Filter Form -->
+    <form method="get" class="row g-3 mb-5 align-items-end">
+        <div class="col-md-4">
+            {{ date_filter_form.date.label_tag }}
+            {{ date_filter_form.date }}
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
         </div>
     </form>
 
+    <!-- Ministries and Ministers -->
     <div class="mb-5">
         <h3>Ministries and Ministers</h3>
         <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+            <table id="ministriesTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
                         <th>Ministry</th>
-                        <th>Minister</th>
+                        <th>Ministers</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,7 +32,7 @@
                         <tr>
                             <td>{{ ministry.name }}</td>
                             <td>
-                                <ul>
+                                <ul class="list-unstyled mb-0">
                                     {% for minister in ministry.ministers.all %}
                                         <li>{{ minister.first_name }} {{ minister.last_name }}</li>
                                     {% endfor %}
@@ -44,10 +45,11 @@
         </div>
     </div>
 
+    <!-- Filtered Schedules -->
     <div class="mb-5">
         <h3>Filtered Schedules</h3>
         <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+            <table id="schedulesTable" class="table table-striped table-bordered">
                 <thead>
                     <tr>
                         <th>Minister</th>
@@ -63,24 +65,33 @@
                 <tbody>
                     {% for schedule in schedules %}
                         <tr>
-                            <td>{{ schedule.minister.first_name }} {{ schedule.minister.last_name }}</td>
+                            <td>
+                                {% if schedule.minister %}
+                                    {{ schedule.minister.first_name }} {{ schedule.minister.last_name }}
+                                {% else %}
+                                    No Minister Assigned
+                                {% endif %}
+                            </td>
+                            
                             <td>{{ schedule.ministry.name }}</td>
                             <td>{{ schedule.location }}</td>
                             <td>{{ schedule.duties }}</td>
                             <td>{{ schedule.start_time }}</td>
                             <td>{{ schedule.end_time }}</td>
-                            <td>{{ schedule.attended }}</td>
                             <td>
-                                <form method="post" style="display: inline;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
-                                    <a href="{% url 'edit_schedule' schedule.id %}" class="btn btn-sm btn-warning">Edit</a>
-                                </form>
-                                <form method="post" style="display: inline;" action="{% url 'delete_schedule' schedule.id %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this schedule?');">Delete</button>
-                                </form>
+                                {% if schedule.attended %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editScheduleModal" data-id="{{ schedule.id }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteScheduleModal" data-id="{{ schedule.id }}">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
                             </td>
                         </tr>
                     {% endfor %}
@@ -89,43 +100,60 @@
         </div>
     </div>
 
-    <!-- Button to download attendance to Excel -->
-    <a href="{% url 'export_attendance' %}" class="btn btn-success mb-5">Download Attendance to Excel</a>
+    <!-- Download Attendance Button -->
+    <div class="mb-5">
+        <a href="{% url 'export_attendance' %}" class="btn btn-success">
+            <i class="fas fa-download"></i> Download Attendance to Excel
+        </a>
+    </div>
 
     <!-- Schedule Form -->
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            {{ form.ministry.label_tag }}
-            {{ form.ministry }}
+    <div class="card mb-5">
+        <div class="card-header">
+            <h3>Add New Schedule</h3>
         </div>
-        <div class="mb-3">
-            {{ form.minister.label_tag }}
-            {{ form.minister }}
+        <div class="card-body">
+            <form method="post" id="scheduleForm">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        {{ form.ministry.label_tag }}
+                        {{ form.ministry }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.minister.label_tag }}
+                        {{ form.minister }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.location.label_tag }}
+                        {{ form.location }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.duties.label_tag }}
+                        {{ form.duties }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.date.label_tag }}
+                        {{ form.date }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.time_slot.label_tag }}
+                        {{ form.time_slot }}
+                    </div>
+                    
+                    <div class="col-md-12 form-check">
+                        {{ form.attended }}
+                        {{ form.attended.label_tag }}
+                    </div>
+                    <div class="col-md-12 text-end">
+                        <button type="submit" class="btn btn-primary">Save Schedule</button>
+                    </div>
+                </div>
+            </form>
         </div>
-        <div class="mb-3">
-            {{ form.location.label_tag }}
-            {{ form.location }}
-        </div>
-        <div class="mb-3">
-            {{ form.duties.label_tag }}
-            {{ form.duties }}
-        </div>
-        <div class="mb-3">
-            {{ form.start_time.label_tag }}
-            {{ form.start_time }}
-        </div>
-        <div class="mb-3">
-            {{ form.end_time.label_tag }}
-            {{ form.end_time }}
-        </div>
-        <div class="mb-3 form-check">
-            {{ form.attended }}
-            {{ form.attended.label_tag }}
-        </div>
-        <button type="submit" class="btn btn-primary">Save Schedule</button>
-    </form>
+    </div>
 
+    <!-- Form Errors -->
     {% if form.errors %}
         <div class="alert alert-danger mt-3">
             <strong>Errors:</strong>
@@ -136,5 +164,145 @@
             </ul>
         </div>
     {% endif %}
+
+<!-- Edit Schedule Modal -->
+<div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" id="editScheduleForm">
+            {% csrf_token %}
+            <input type="hidden" name="schedule_id" id="editScheduleId">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Schedule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Ministry Field -->
+                        <div class="col-md-6">
+                            <label for="edit_ministry" class="form-label">Ministry</label>
+                            <select name="ministry" id="edit_ministry" class="form-control">
+                                {% for ministry in ministries %}
+                                    <option value="{{ ministry.id }}">{{ ministry.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Minister Field -->
+                        <div class="col-md-6">
+                            <label for="edit_minister" class="form-label">Minister</label>
+                            <select name="minister" id="edit_minister" class="form-control">
+                                {% for minister in ministers %}
+                                    <option value="{{ minister.id }}">{{ minister.first_name }} {{ minister.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Location Field -->
+                        <div class="col-md-6">
+                            <label for="edit_location" class="form-label">Location</label>
+                            <input type="text" name="location" id="edit_location" class="form-control">
+                        </div>
+                        <!-- Duties Field -->
+                        <div class="col-md-6">
+                            <label for="edit_duties" class="form-label">Duties</label>
+                            <textarea name="duties" id="edit_duties" class="form-control" rows="3"></textarea>
+                        </div>
+                        <!-- Date Field -->
+                        <div class="col-md-6">
+                            <label for="edit_date" class="form-label">Date</label>
+                            <input type="date" name="date" id="edit_date" class="form-control">
+                        </div>
+                        <!-- Time Slot Field -->
+                        <div class="col-md-6">
+                            <label for="edit_time_slot" class="form-label">Time Slot</label>
+                            <select name="time_slot" id="edit_time_slot" class="form-control">
+                                {% for value, label in form.time_slot.field.choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Attended Field -->
+                        <div class="col-md-12 form-check">
+                            <input type="checkbox" name="attended" id="edit_attended" class="form-check-input">
+                            <label for="edit_attended" class="form-check-label">Attended</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update Schedule</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
+
+
+    <!-- Delete Schedule Modal -->
+    <div class="modal fade" id="deleteScheduleModal" tabindex="-1" aria-labelledby="deleteScheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" id="deleteScheduleForm" action="{% url 'schedule_delete' %}">
+                {% csrf_token %}
+                <input type="hidden" name="schedule_id" id="deleteScheduleId">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteScheduleModalLabel">Delete Schedule</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this schedule?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTables
+        $('#ministriesTable, #schedulesTable').DataTable({
+            responsive: true
+        });
+
+        // Initialize DateTime Pickers
+        $('#startTimePicker, #endTimePicker').datetimepicker({
+            format: 'YYYY-MM-DD HH:mm'
+        });
+
+        // Edit Schedule Modal Logic
+        $('#editScheduleModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var scheduleId = button.data('id');
+
+            $.ajax({
+                url: `/schedule_detail/${scheduleId}/`,
+                method: 'GET',
+                success: function(data) {
+                    $('#editScheduleId').val(data.id);
+                    $('#editScheduleForm select[name="ministry"]').val(data.ministry);
+                    $('#editScheduleForm select[name="minister"]').val(data.minister);
+                    $('#editScheduleForm input[name="location"]').val(data.location);
+                    $('#editScheduleForm textarea[name="duties"]').val(data.duties);
+                    $('#editScheduleForm input[name="attended"]').prop('checked', data.attended);
+                    $('#editScheduleForm input[name="date"]').val(data.date);
+                    $('#editScheduleForm select[name="time_slot"]').val(data.time_slot);
+                }
+            });
+        });
+
+        // Delete Schedule Modal Logic
+        $('#deleteScheduleModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var scheduleId = button.data('id');
+            $('#deleteScheduleId').val(scheduleId);
+        });
+    });
+</script>
 {% endblock %}

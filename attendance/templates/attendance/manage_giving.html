@@ -1,3 +1,4 @@
+<!--attendance/manage_giving.html-->
 {% extends 'base.html' %}
 
 {% load crispy_forms_tags %}
@@ -5,8 +6,9 @@
 {% block title %}Manage Giving{% endblock %}
 
 {% block content %}
-<h2 style="margin-top: 80px;">Manage Giving</h2>
+<h2 class="mt-5 mb-4" style="top: 40px;">Manage Giving</h2>
 
+<!-- Add Giving Form -->
 <div class="card mb-4">
     <div class="card-header">
         <h3>Add Giving</h3>
@@ -14,45 +16,58 @@
     <div class="card-body">
         <form method="post" id="givingForm">
             {% csrf_token %}
-            <div class="mb-3">
-    
-                {{ form.giver_type|as_crispy_field }}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.giver_type|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3" id="memberField">
+                    {{ form.member|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3" id="ministerField">
+                    {{ form.minister|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.date|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.amount|as_crispy_field }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.purpose|as_crispy_field }}
+                </div>
+                <div class="col-12 mb-3">
+                    {{ form.notes|as_crispy_field }}
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">Add Giving</button>
+                </div>
             </div>
-            <div class="mb-3" id="memberField">
-           
-                {{ form.member|as_crispy_field }}
-            </div>
-            <div class="mb-3" id="ministerField">
-              
-                {{ form.minister|as_crispy_field }}
-            </div>
-            <div class="mb-3">
-      
-                {{ form.date|as_crispy_field }}
-            </div>
-            <div class="mb-3">
-        
-                {{ form.amount|as_crispy_field }}
-            </div>
-            <div class="mb-3">
-             
-                {{ form.purpose|as_crispy_field }}
-            </div>
-            <div class="mb-3">
-       
-                {{ form.notes|as_crispy_field }}
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>
 </div>
 
+<!-- Download and Filter Options -->
+<div class="mb-4">
+    <div class="d-flex flex-wrap align-items-center">
+        <div class="me-auto mb-2">
+            <input type="date" id="filterDate" class="form-control" placeholder="Filter by Date">
+        </div>
+        <div class="mb-2">
+            <button onclick="downloadExcel('member')" class="btn btn-secondary me-2">Download Member Givings Excel</button>
+            <button onclick="downloadExcel('minister')" class="btn btn-secondary me-2">Download Minister Givings Excel</button>
+            <a href="{% url 'export_giving_pdf' 'member' %}" class="btn btn-secondary me-2">Download Member Givings PDF</a>
+            <a href="{% url 'export_giving_pdf' 'minister' %}" class="btn btn-secondary">Download Minister Givings PDF</a>
+        </div>
+    </div>
+</div>
+
+<!-- Giving List - Members -->
 <div class="card mb-4">
     <div class="card-header">
         <h3>Giving List - Members</h3>
     </div>
     <div class="card-body">
-        <table id="memberTable" class="table table-striped">
+        <table id="memberTable" class="table table-striped table-responsive">
             <thead>
                 <tr>
                     <th>Member</th>
@@ -72,9 +87,15 @@
                         <td>{{ giving.get_purpose_display }}</td>
                         <td>{{ giving.notes }}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal" data-id="{{ giving.id }}" data-member="{{ giving.member.id }}" data-minister="{{ giving.minister }}" data-date="{{ giving.date }}" data-amount="{{ giving.amount }}" data-purpose="{{ giving.purpose }}" data-notes="{{ giving.notes }}">Edit</button>
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ giving.id }}">Delete</button>
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal"
+                                data-id="{{ giving.id }}" data-giver-type="member" data-member="{{ giving.member.id }}"
+                                data-date="{{ giving.date }}" data-amount="{{ giving.amount }}"
+                                data-purpose="{{ giving.purpose }}" data-notes="{{ giving.notes }}">Edit</button>
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-id="{{ giving.id }}">Delete</button>
+                                <a href="{% url 'download_individual_giving_pdf' 'member' giving.member.id %}" class="btn btn-secondary btn-sm">Download PDF</a>
                         </td>
+                       
                     </tr>
                 {% endfor %}
             </tbody>
@@ -82,12 +103,13 @@
     </div>
 </div>
 
+<!-- Giving List - Ministers -->
 <div class="card mb-4">
     <div class="card-header">
         <h3>Giving List - Ministers</h3>
     </div>
     <div class="card-body">
-        <table id="ministerTable" class="table table-striped">
+        <table id="ministerTable" class="table table-striped table-responsive">
             <thead>
                 <tr>
                     <th>Minister</th>
@@ -107,9 +129,15 @@
                         <td>{{ giving.get_purpose_display }}</td>
                         <td>{{ giving.notes }}</td>
                         <td>
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal" data-id="{{ giving.id }}" data-member="{{ giving.member }}" data-minister="{{ giving.minister.id }}" data-date="{{ giving.date }}" data-amount="{{ giving.amount }}" data-purpose="{{ giving.purpose }}" data-notes="{{ giving.notes }}">Edit</button>
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ giving.id }}">Delete</button>
+                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal"
+                                data-id="{{ giving.id }}" data-giver-type="minister" data-minister="{{ giving.minister.id }}"
+                                data-date="{{ giving.date }}" data-amount="{{ giving.amount }}"
+                                data-purpose="{{ giving.purpose }}" data-notes="{{ giving.notes }}">Edit</button>
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                data-id="{{ giving.id }}">Delete</button>
+                                <a href="{% url 'download_individual_giving_pdf' 'minister' giving.minister.id %}" class="btn btn-secondary btn-sm">Download PDF</a>
                         </td>
+                    
                     </tr>
                 {% endfor %}
             </tbody>
@@ -117,55 +145,47 @@
     </div>
 </div>
 
-<div class="d-flex mb-3">
-    <input type="date" id="filterDate" class="form-control me-2">
-    <button onclick="downloadExcel('member')" class="btn btn-secondary">Download Member Givings Excel</button>
-    <button onclick="downloadExcel('minister')" class="btn btn-secondary ms-2">Download Minister Givings Excel</button>
-</div>
-
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editModalLabel">Edit Giving</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="post" id="editGivingForm">
-                    {% csrf_token %}
+            <form method="post" id="editGivingForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit Giving</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
                     <input type="hidden" name="giving_id" id="editGivingId">
-                    <div class="mb-3">
-                        <label for="editGiverType" class="form-label">Giver Type</label>
-                        {{ form.giver_type|as_crispy_field }}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.giver_type|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mb-3" id="editMemberField">
+                            {{ form.member|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mb-3" id="editMinisterField">
+                            {{ form.minister|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.amount|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.purpose|as_crispy_field }}
+                        </div>
+                        <div class="col-12 mb-3">
+                            {{ form.notes|as_crispy_field }}
+                        </div>
                     </div>
-                    <div class="mb-3" id="editMemberField">
-                        <label for="editMember" class="form-label">Member</label>
-                        {{ form.member|as_crispy_field }}
-                    </div>
-                    <div class="mb-3" id="editMinisterField">
-                        <label for="editMinister" class="form-label">Minister</label>
-                        {{ form.minister|as_crispy_field }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="editDate" class="form-label">Date</label>
-                        {{ form.date|as_crispy_field }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="editAmount" class="form-label">Amount</label>
-                        {{ form.amount|as_crispy_field }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="editPurpose" class="form-label">Purpose</label>
-                        {{ form.purpose|as_crispy_field }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="editNotes" class="form-label">Notes</label>
-                        {{ form.notes|as_crispy_field }}
-                    </div>
+                </div>
+                <div class="modal-footer">
                     <button type="submit" name="update_giving" class="btn btn-primary">Update</button>
-                </form>
-            </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -174,26 +194,32 @@
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Giving</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this giving record?</p>
-                <form method="post" id="deleteGivingForm">
-                    {% csrf_token %}
+            <form method="post" id="deleteGivingForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete Giving</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this giving record?</p>
                     <input type="hidden" name="giving_id" id="deleteGivingId">
+                </div>
+                <div class="modal-footer">
                     <button type="submit" name="delete_giving" class="btn btn-danger">Delete</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const giverTypeField = document.querySelector('select[name="giver_type"]');
+    // Toggle Giver Fields in Add Form
+    const giverTypeField = document.querySelector('#givingForm select[name="giver_type"]');
     const memberField = document.getElementById('memberField');
     const ministerField = document.getElementById('ministerField');
 
@@ -204,46 +230,77 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (giverTypeField.value === 'minister') {
             memberField.style.display = 'none';
             ministerField.style.display = 'block';
+        } else {
+            memberField.style.display = 'none';
+            ministerField.style.display = 'none';
         }
     }
 
     giverTypeField.addEventListener('change', toggleGiverFields);
-    toggleGiverFields(); // Initial call to set the correct fields on page load
+    toggleGiverFields(); // Initial call on page load
 
-    $('#editModal').on('show.bs.modal', function(event) {
-        const button = $(event.relatedTarget);
-        const id = button.data('id');
-        const member = button.data('member');
-        const minister = button.data('minister');
-        const date = button.data('date');
-        const amount = button.data('amount');
-        const purpose = button.data('purpose');
-        const notes = button.data('notes');
+    // Edit Modal Logic
+    const editModal = document.getElementById('editModal');
+    editModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+        const giverType = button.getAttribute('data-giver-type');
+        const member = button.getAttribute('data-member');
+        const minister = button.getAttribute('data-minister');
+        const date = button.getAttribute('data-date');
+        const amount = button.getAttribute('data-amount');
+        const purpose = button.getAttribute('data-purpose');
+        const notes = button.getAttribute('data-notes');
 
-        const modal = $(this);
-        modal.find('#editGivingId').val(id);
-        modal.find('#editMemberField select').val(member);
-        modal.find('#editMinisterField select').val(minister);
-        modal.find('#editDate input').val(date);
-        modal.find('#editAmount input').val(amount);
-        modal.find('#editPurpose select').val(purpose);
-        modal.find('#editNotes textarea').val(notes);
+        const modal = this;
+        modal.querySelector('#editGivingId').value = id;
+        modal.querySelector('#editGivingForm select[name="giver_type"]').value = giverType;
+        toggleEditGiverFields(giverType, member, minister);
 
-        toggleGiverFields();
+        modal.querySelector('#editGivingForm input[name="date"]').value = date;
+        modal.querySelector('#editGivingForm input[name="amount"]').value = amount;
+        modal.querySelector('#editGivingForm select[name="purpose"]').value = purpose;
+        modal.querySelector('#editGivingForm textarea[name="notes"]').value = notes;
     });
 
-    $('#deleteModal').on('show.bs.modal', function(event) {
-        const button = $(event.relatedTarget);
-        const id = button.data('id');
+    function toggleEditGiverFields(giverType, member, minister) {
+        const editMemberField = document.getElementById('editMemberField');
+        const editMinisterField = document.getElementById('editMinisterField');
 
-        const modal = $(this);
-        modal.find('#deleteGivingId').val(id);
+        if (giverType === 'member') {
+            editMemberField.style.display = 'block';
+            editMinisterField.style.display = 'none';
+            editMemberField.querySelector('select').value = member;
+        } else if (giverType === 'minister') {
+            editMemberField.style.display = 'none';
+            editMinisterField.style.display = 'block';
+            editMinisterField.querySelector('select').value = minister;
+        } else {
+            editMemberField.style.display = 'none';
+            editMinisterField.style.display = 'none';
+        }
+    }
+
+    // Delete Modal Logic
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-id');
+
+        const modal = this;
+        modal.querySelector('#deleteGivingId').value = id;
     });
 
-    $('#memberTable').DataTable();
-    $('#ministerTable').DataTable();
+    // Initialize DataTables
+    $('#memberTable').DataTable({
+        responsive: true
+    });
+    $('#ministerTable').DataTable({
+        responsive: true
+    });
 });
 
+// Download Excel Function
 function downloadExcel(type) {
     const date = document.getElementById('filterDate').value;
     let url = '';

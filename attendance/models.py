@@ -1,9 +1,11 @@
+#attendance/models.py
 from django.db import models
 from django.utils import timezone
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from ministry.models import Minister
+from django.contrib.auth.models import User
 
 
 class Service(models.Model):
@@ -15,11 +17,17 @@ class Service(models.Model):
         (1, 'Others - Campus Service'),
     ))
 
+
     def __str__(self):
         return f"{self.name} at {self.get_time_display()}"
 
 
 class Member(models.Model):
+    GENDER_CHOICES = [
+    ('M', 'Male'),
+    ('F', 'Female'),
+    ]
+
     id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
@@ -34,6 +42,8 @@ class Member(models.Model):
     school = models.CharField(max_length=255, blank=True, null=True)
     course = models.CharField(max_length=255, blank=True, null=True)
     is_newcomer = models.BooleanField(default=False)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='member_profile', null=True, blank=True)
 
     def __str__(self):
         return f"{self.first_name} {self.middle_name} {self.last_name}"

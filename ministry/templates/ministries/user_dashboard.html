@@ -1,0 +1,422 @@
+<!-- templates/ministries/user_dashboard.html -->
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Bethany Church - Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- Custom CSS styles -->
+<style>
+    /* Hero Section Styles */
+    .jumbotron {
+        position: relative;
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 150px 25px;
+        margin-bottom: 30px;
+    }
+    .jumbotron::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    .jumbotron .container {
+        position: relative;
+        z-index: 2;
+    }
+    .jumbotron h1, .jumbotron p {
+        color: white;
+    }
+    /* Card Header Styles */
+    .card-header {
+        background-color: #FF8748;
+        color: white;
+    }
+    .card-header h3 {
+        margin: 0;
+    }
+    .btn-link {
+        color: white;
+    }
+    .btn-link:hover {
+        color: #f0f0f0;
+    }
+    /* Search Input Styles */
+    #taskSearchInput {
+        max-width: 300px;
+    }
+    /* List Group Item Hover */
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    /* Responsive Adjustments */
+    @media (max-width: 576px) {
+        .d-md-flex {
+            flex-direction: column !important;
+        }
+        .d-md-flex .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    }
+    /* Hero Section Responsive */
+    @media (max-width: 768px) {
+        .jumbotron {
+            padding: 100px 15px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+     <!-- Hero Section -->
+     <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="jumbotron p-5 text-white rounded bg-dark" style="background-image: url({% static 'hero.jpg' %});">
+
+                <div class="container text-center">
+                    <h1 class="display-4">Welcome to Bethany Church!</h1>
+                    <p class="lead">Magnify God, Make Disciples</p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ministry and Date Selection Section -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <form method="get" class="mb-3 d-flex">
+                <div class="input-group me-3">
+                    <label class="input-group-text" for="ministrySelect">Select Ministry</label>
+                    <select class="form-select" id="ministrySelect" name="ministry">
+                        <option value="">All Ministries</option>
+                        {% for ministry in ministries %}
+                            <option value="{{ ministry.id }}"
+                                {% if ministry.id == selected_ministry_id %}selected{% endif %}>
+                                {{ ministry.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group me-3">
+                    <label class="input-group-text" for="dateSelect">Select Date</label>
+                    <input type="date" class="form-control" id="dateSelect" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                </div>
+                <div>
+                    <button type="button" id="filterButton" class="btn btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filtered Schedule Section -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h3>Schedules on Selected Date</h3>
+            <div class="table-responsive">
+                <table id="filteredScheduleTable" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Minister</th>
+                            <th>Ministry</th>
+                            <th>Location</th>
+                            <th>Duties</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be inserted here via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minister Details Modal -->
+    <div class="modal fade" id="ministerModal" tabindex="-1" aria-labelledby="ministerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Minister Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Minister details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scheduled Tasks Section -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <!-- Card for Scheduled Tasks -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0 d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar-alt me-2"></i> Upcoming Events</span>
+                        <button class="btn btn-link text-decoration-none" data-bs-toggle="collapse" data-bs-target="#tasksCollapse" aria-expanded="true">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h3>
+                </div>
+                <div id="tasksCollapse" class="collapse show">
+                    <div class="card-body">
+                        {% if scheduled_tasks %}
+                            <div class="table-responsive">
+                                <table id="upcomingEventsTable" class="table table-striped table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Minister</th>
+                                            <th>Ministry</th>
+                                            <th>Location</th>
+                                            <th>Duties</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for task in scheduled_tasks %}
+                                            <tr>
+                                                <td>{{ task.minister.first_name }} {{ task.minister.last_name }}</td>
+                                                <td>{{ task.ministry.name }}</td>
+                                                <td>{{ task.location }}</td>
+                                                <td>{{ task.duties }}</td>
+                                                <td>{{ task.start_time|time:"H:i" }}</td>
+                                                <td>{{ task.end_time|time:"H:i" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p>No upcoming events available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Small Group Attendance Section -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0 d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-users me-2"></i> Recent Small Group Gatherings</span>
+                        <button class="btn btn-link text-decoration-none" data-bs-toggle="collapse" data-bs-target="#attendanceCollapse" aria-expanded="true">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </h3>
+                </div>
+                <div id="attendanceCollapse" class="collapse show">
+                    <div class="card-body">
+                        {% if small_group_attendance %}
+                            <canvas id="attendanceChart" height="100"></canvas>
+                            <!-- Table as fallback or additional info -->
+                            <table class="table table-striped mt-4">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Small Group</th>
+                                        <th>Attended</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in small_group_attendance %}
+                                    <tr>
+                                        <td>{{ record.date|date:"M d, Y" }}</td>
+                                        <td>{{ record.small_group.name }}</td>
+                                        <td>
+                                            {% if record.attended %}
+                                                <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">No</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>No recent small group gatherings available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include jQuery and DataTables if not already included -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Include DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<!-- Include Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTables
+        let filteredScheduleTable = $('#filteredScheduleTable').DataTable({
+            responsive: true,
+        });
+
+        // Function to fetch and display schedules
+        function fetchSchedules() {
+            const date = document.getElementById('dateSelect').value;
+            const ministry = document.getElementById('ministrySelect').value;
+
+            // Show loading indicator
+            const tableBody = document.querySelector('#filteredScheduleTable tbody');
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+
+            // Make AJAX request
+            fetch(`/ajax/get_schedule/?date=${date}&ministry=${ministry}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Destroy the existing DataTable before updating
+                    filteredScheduleTable.clear().destroy();
+
+                    // Update the UI with the data
+                    tableBody.innerHTML = '';
+
+                    if (data.scheduled_tasks.length > 0) {
+                        data.scheduled_tasks.forEach(task => {
+                            const row = `
+                                <tr>
+                                    <td><a href="#" class="minister-link" data-minister-id="${task.minister_id}">${task.minister}</a></td>
+                                    <td>${task.ministry}</td>
+                                    <td>${task.location}</td>
+                                    <td>${task.duties}</td>
+                                    <td>${task.start_time}</td>
+                                    <td>${task.end_time}</td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No schedules found for the selected date.</td></tr>';
+                    }
+
+                    // Re-initialize DataTable
+                    filteredScheduleTable = $('#filteredScheduleTable').DataTable({
+                        responsive: true,
+                    });
+
+                    // Add click event listeners to minister links
+                    $('#filteredScheduleTable').on('click', '.minister-link', function(event) {
+                        event.preventDefault();
+                        const ministerId = $(this).data('minister-id');
+
+                        // Make AJAX request to get minister details
+                        fetch(`/minister_detail/${ministerId}/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                // Populate modal with minister details
+                                $('#ministerModal .modal-title').text(`${data.first_name} ${data.last_name}`);
+                                $('#ministerModal .modal-body').html(`
+                                    <p>Email: ${data.email}</p>
+                                    <p>Position: ${data.position}</p>
+                                    <p>Phone Number: ${data.phone_number}</p>
+                                    <p>Address: ${data.address}</p>
+                                `);
+                                // Show the modal
+                                $('#ministerModal').modal('show');
+                            })
+                            .catch(error => {
+                                console.error('Error fetching minister details:', error);
+                            });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching schedules:', error);
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error fetching data.</td></tr>';
+                });
+        }
+
+        // Add event listeners
+        const dateSelect = document.getElementById('dateSelect');
+        const ministrySelect = document.getElementById('ministrySelect');
+        const filterButton = document.getElementById('filterButton');
+
+        dateSelect.addEventListener('change', fetchSchedules);
+        ministrySelect.addEventListener('change', fetchSchedules);
+        filterButton.addEventListener('click', fetchSchedules);
+
+        // Fetch schedules on page load
+        fetchSchedules();
+
+        // Initialize Upcoming Events DataTable
+        $('#upcomingEventsTable').DataTable({
+            responsive: true,
+        });
+
+        // Chart.js for Attendance Chart
+        {% if small_group_attendance %}
+        var ctx = document.getElementById('attendanceChart').getContext('2d');
+        var attendanceDates = [
+            {% for record in small_group_attendance reversed %}
+            '{{ record.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        ];
+        var attendanceData = [
+            {% for record in small_group_attendance reversed %}
+            {% if record.attended %}1{% else %}0{% endif %}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        ];
+        var attendanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: attendanceDates,
+                datasets: [{
+                    label: 'Attendance',
+                    data: attendanceData,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: '#FF8748',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return value === 1 ? 'Present' : 'Absent';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y === 1 ? 'Present' : 'Absent';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

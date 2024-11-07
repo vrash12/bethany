@@ -1,3 +1,4 @@
+#ministry/views.py
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView
 from .forms import  MinisterForm, ScheduleForm, MinistryFilterForm, AvailabilityForm, DateFilterForm
@@ -8,6 +9,10 @@ from django.core import serializers
 from django.http import JsonResponse, HttpResponse
 from django.views.generic.edit import UpdateView
 from django.views import View
+from django.contrib import messages
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.views.generic import ListView
 from django.views.generic.detail import DetailView
 import logging
 from django.utils.decorators import method_decorator
@@ -16,6 +21,12 @@ from .models import Schedule, Minister, Ministry, Availability
 import json
 from schedule.models import Event
 import pandas as pd
+import logging
+from django.contrib.auth.mixins import LoginRequiredMixin
+from attendance.models import Member, SmallGroupAttendance
+from attendance.forms import MemberForm
+from django.utils.dateparse import parse_date
+
 
 
 logger = logging.getLogger(__name__)
@@ -87,6 +98,7 @@ class ScheduleCreateView(View):
         date_filter_form = DateFilterForm(request.GET)
         ministries = Ministry.objects.prefetch_related('ministers').all()
         schedules = Schedule.objects.all()
+        ministers = Minister.objects.all()
 
         if date_filter_form.is_valid():
             filter_date = date_filter_form.cleaned_data['date']
@@ -96,7 +108,8 @@ class ScheduleCreateView(View):
             'form': form,
             'date_filter_form': date_filter_form,
             'ministries': ministries,
-            'schedules': schedules
+            'schedules': schedules,
+            'ministers': ministers,
         })
 
     def post(self, request, *args, **kwargs):
@@ -112,10 +125,12 @@ class ScheduleCreateView(View):
         date_filter_form = DateFilterForm()
         ministries = Ministry.objects.prefetch_related('ministers').all()
         schedules = Schedule.objects.all()
+        ministers = Minister.objects.all()
         
         return render(request, self.template_name, {
             'form': form,
             'date_filter_form': date_filter_form,
+            'ministers': ministers,
             'ministries': ministries,
             'schedules': schedules
         })
@@ -328,4 +343,125 @@ class ScheduleDeleteView(View):
         schedule = get_object_or_404(Schedule, pk=pk)
         schedule.delete()
         return redirect('schedule_create')
+  
 
+# ministry/views.py
+
+class GeneralDashboardView(TemplateView):
+    template_name = 'ministries/user_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get the list of ministries
+        ministries = Ministry.objects.all()
+        context['ministries'] = ministries
+
+        # Get the selected ministry ID from GET parameters
+        selected_ministry_id = self.request.GET.get('ministry')
+
+        # Fetch general ministry schedules
+        scheduled_tasks = Schedule.objects.select_related('ministry', 'minister').order_by('start_time')
+
+        # If a ministry is selected, filter the schedules
+        if selected_ministry_id:
+            scheduled_tasks = scheduled_tasks.filter(ministry_id=selected_ministry_id)
+            context['selected_ministry_id'] = int(selected_ministry_id)
+        else:
+            context['selected_ministry_id'] = None
+
+        # Fetch general small group attendance records
+        small_group_attendance = SmallGroupAttendance.objects.select_related('small_group').order_by('-date')[:5]
+
+        context['scheduled_tasks'] = scheduled_tasks
+        context['small_group_attendance'] = small_group_attendance
+
+        return context
+
+    
+
+def minister_list_ajax(request):
+    form = MinistryFilterForm(request.GET)
+    if form.is_valid():
+        queryset = Minister.objects.all()
+        ministry_id = form.cleaned_data.get('ministry')
+        field_name = form.cleaned_data.get('field_name')  # Example additional filter
+
+        if ministry_id:
+            queryset = queryset.filter(ministry__id=ministry_id)
+        if field_name:
+            queryset = queryset.filter(field_name__icontains=field_name)
+        # Add more filters as needed based on your form fields
+    else:
+        queryset = Minister.objects.all()
+
+    # Serialize the data
+    ministers = []
+    for minister in queryset:
+        ministers.append({
+            'id': minister.id,
+            'first_name': minister.first_name,
+            'last_name': minister.last_name,
+            'ministry': minister.ministry.name,
+            # Add other fields as necessary
+        })
+
+    return JsonResponse({'ministers': ministers})
+
+
+def schedule_detail(request, pk):
+    schedule = get_object_or_404(Schedule, pk=pk)
+    data = {
+        'id': schedule.id,
+        'ministry': schedule.ministry.id,
+        'minister': schedule.minister.id if schedule.minister else None,
+        'location': schedule.location,
+        'duties': schedule.duties,
+        'attended': schedule.attended,
+        'date': schedule.date.isoformat(),
+        'time_slot': schedule.time_slot,
+    }
+    return JsonResponse(data)
+def get_schedules_by_date(request):
+    date_str = request.GET.get('date')
+    ministry_id = request.GET.get('ministry')
+    scheduled_tasks = Schedule.objects.select_related('ministry', 'minister').order_by('start_time')
+
+    if date_str:
+        selected_date = parse_date(date_str)
+        scheduled_tasks = scheduled_tasks.filter(date=selected_date)
+    else:
+        selected_date = None
+
+    if ministry_id:
+        try:
+            ministry_id = int(ministry_id)
+            scheduled_tasks = scheduled_tasks.filter(ministry_id=ministry_id)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid ministry ID'}, status=400)
+
+    # Prepare data to return as JSON
+    data = []
+    for task in scheduled_tasks:
+        minister_name = f"{task.minister.first_name} {task.minister.last_name}" if task.minister else "No Minister"
+        minister_id = task.minister.id if task.minister else None
+        start_time_str = task.start_time.strftime('%H:%M') if task.start_time else ''
+        end_time_str = task.end_time.strftime('%H:%M') if task.end_time else ''
+        data.append({
+            'minister': minister_name,
+            'minister_id': minister_id,
+            'ministry': task.ministry.name,
+            'location': task.location,
+            'duties': task.duties,
+            'start_time': start_time_str,
+            'end_time': end_time_str,
+        })
+
+    return JsonResponse({'scheduled_tasks': data})
+
+class ScheduleDeleteView(View):
+    def post(self, request, *args, **kwargs):
+        schedule_id = request.POST.get('schedule_id')
+        schedule = get_object_or_404(Schedule, pk=schedule_id)
+        schedule.delete()
+        return redirect('schedule_create')

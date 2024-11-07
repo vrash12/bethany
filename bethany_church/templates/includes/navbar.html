@@ -1,24 +1,42 @@
-<style>
-    body {
-        margin: 0;
-        padding: 0;
+{% load static %}
+<nav>
+    <img src="{% static 'logo.png' %}" alt="Bethany Church Logo">
+    <div class="menu-icon" onclick="toggleMenu()">
+        <i class="fas fa-bars"></i>
+    </div>
+    <div class="nav-links">
+        {% if user.is_authenticated %}
+            {% if user.is_staff or user.is_superuser %}
+                <!-- Admin Home Link -->
+                <a href="{% url 'admin_home' %}" class="{% if request.resolver_match.url_name == 'admin_home' %}active{% endif %}">Home</a>
+            {% else %}
+                <!-- Regular User Home Link -->
+                <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
+            {% endif %}
+            <!-- Other Links -->
+            <a href="{% url 'mark_attendance' %}" class="{% if request.resolver_match.url_name == 'mark_attendance' %}active{% endif %}">Attendance</a>
+            <a href="{% url 'ministry_list' %}" class="{% if request.resolver_match.url_name == 'ministry_list' %}active{% endif %}">Ministry</a>
+            <a href="{% url 'small_group_list_create' %}" class="{% if request.resolver_match.url_name == 'small_group_list_create' %}active{% endif %}">Small Groups</a>
+            <a href="{% url 'manage_giving' %}" class="{% if request.resolver_match.url_name == 'manage_giving' %}active{% endif %}">Tithes</a>
+            <!-- Logout Form -->
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link logout-button">
+                    Logout
+                </button>
+            </form>
+        {% else %}
+            <!-- Links for unauthenticated users (visitors) -->
+            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
+            <a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">Admin Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- Scripts -->
+<script>
+    function toggleMenu() {
+        const navLinks = document.querySelector('.nav-links');
+        navLinks.classList.toggle('active');
     }
-    nav {
-        box-sizing: border-box;
-    }
-    </style>
-    
-    {% load static %}
-    <nav style="background-color: #FF8748; padding: 10px 20px; display: flex; align-items: center; position: absolute; top: 0; width: 100%;">
-        <img src="{% static 'logo.png' %}" alt="Bethany Church Logo" style="height: 50px; margin-left: 20px;">
-        <a href="{% url 'home' %}" style="color: white; text-decoration: none; font-weight: bold; margin-left: auto;">Home</a>
-        <!--Attendance-->
-        <a href="{% url 'mark_attendance' %}" style="color: white; text-decoration: none; font-weight: bold; margin-left: 20px;">Attendance</a>
-        <!--Ministry-->
-        <a href="{% url 'ministry_list' %}" style="color: white; text-decoration: none; font-weight: bold; margin-left: 20px;">Ministry</a>
-        <!--Small Groups-->
-        <a href="{% url 'small_group_list_create' %}" style="color: white; text-decoration: none; font-weight: bold; margin-left: 20px;">Small Groups</a>
-        <!--Tithes-->
-        <a href="{% url 'manage_giving' %}" style="color: white; text-decoration: none; font-weight: bold; margin-left: 20px;">Tithes</a>
-    </nav>
-    <div style="background-color: green; padding: 3px 20px; display: flex; align-items: center; position: absolute; top: 70px; width: 100%;"></div>
+</script>
