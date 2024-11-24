@@ -125,12 +125,11 @@
     </div>
   </div>
 </div>
-
 <!-- Attendance Modal -->
 <div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <form id="attendanceForm" method="post">
+      <form id="attendanceForm" method="post" enctype="multipart/form-data">  <!-- Add enctype -->
         {% csrf_token %}
         <div class="modal-header">
           <h5 class="modal-title" id="attendanceModalLabel">Record Attendance</h5>
@@ -146,6 +145,10 @@
             {% render_field attendance_form.attended class="form-check-input" id="id_attended" %}
             {{ attendance_form.attended.label_tag }}
           </div>
+          <div class="mb-3">
+            {{ attendance_form.image.label_tag }}
+            {% render_field attendance_form.image class="form-control" id="id_image" %}
+          </div>
           <input type="hidden" id="attendanceGroupId" name="small_group_id" value="">
         </div>
         <div class="modal-footer">
@@ -156,6 +159,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- Toast Container -->
 <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
@@ -168,38 +172,48 @@
     <h2>Small Group Attendances</h2>
   </div>
   <div class="card-body">
-    <table id="attendanceTable" class="table table-striped table-bordered">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Small Group</th>
-          <th>Members Attended</th>
-          <th>Ministers Attended</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for attendance in attendance_list %}
-        <tr>
-          <td>{{ attendance.date }}</td>
-          <td>{{ attendance.small_group.name }}</td>
-          <td>
-            <ul>
-              {% for member in attendance.members.all %}
-              <li>{{ member.first_name }} {{ member.last_name }}</li>
-              {% endfor %}
-            </ul>
-          </td>
-          <td>
-            <ul>
-              {% for minister in attendance.ministers.all %}
-              <li>{{ minister.first_name }} {{ minister.last_name }}</li>
-              {% endfor %}
-            </ul>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<!-- Update Table Headers -->
+<table id="attendanceTable" class="table table-striped table-bordered">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Small Group</th>
+      <th>Members Attended</th>
+      <th>Ministers Attended</th>
+      <th>Image</th>  <!-- New Column -->
+    </tr>
+  </thead>
+  <tbody>
+    {% for attendance in attendance_list %}
+    <tr>
+      <td>{{ attendance.date }}</td>
+      <td>{{ attendance.small_group.name }}</td>
+      <td>
+        <ul>
+          {% for member in attendance.members.all %}
+          <li>{{ member.first_name }} {{ member.last_name }}</li>
+          {% endfor %}
+        </ul>
+      </td>
+      <td>
+        <ul>
+          {% for minister in attendance.ministers.all %}
+          <li>{{ minister.first_name }} {{ minister.last_name }}</li>
+          {% endfor %}
+        </ul>
+      </td>
+      <td>
+        {% if attendance.image %}
+          <img src="{{ attendance.image.url }}" alt="Attendance Image" style="max-width: 100px;">
+        {% else %}
+          No Image
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
   </div>
 </div>
 {% endblock %}
@@ -338,41 +352,44 @@
       $('#attendanceModal').modal('show');
     });
 
-    // Submit Attendance Form via AJAX
-    $('#attendanceForm').submit(function(event) {
-      event.preventDefault();
-      const formData = $(this).serialize();
-      console.log('Submitting Attendance Form:', formData);
-      $.ajax({
-        url: "{% url 'record_attendance' %}",
-        method: 'POST',
-        data: formData,
-        headers: {
-          'X-CSRFToken': getCSRFToken()
-        },
-        success: function(response) {
-          console.log('Attendance recorded successfully:', response);
-          $('#attendanceModal').modal('hide');
-          showToast(response.message, 'success');
-          location.reload();
-        },
-        error: function(xhr) {
-          console.error('Error recording attendance:', xhr);
-          if (xhr.responseJSON && xhr.responseJSON.errors) {
-            const errors = xhr.responseJSON.errors;
-            let errorsHtml = '<div class="alert alert-danger"><ul>';
-            $.each(errors, function(key, value) {
-              errorsHtml += '<li>' + value[0] + '</li>';
-            });
-            errorsHtml += '</ul></div>';
-            $('#attendanceFormErrors').html(errorsHtml);
-          } else {
-            $('#attendanceFormErrors').html('<div class="alert alert-danger">An unexpected error occurred.</div>');
-          }
-          showToast('Error recording attendance.', 'danger');
-        }
-      });
-    });
+// Submit Attendance Form via AJAX
+$('#attendanceForm').submit(function(event) {
+  event.preventDefault();
+  var formData = new FormData(this);  // Use FormData
+  console.log('Submitting Attendance Form:', formData);
+  $.ajax({
+    url: "{% url 'record_attendance' %}",
+    method: 'POST',
+    data: formData,
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    },
+    processData: false,  // Important
+    contentType: false,  // Important
+    success: function(response) {
+      console.log('Attendance recorded successfully:', response);
+      $('#attendanceModal').modal('hide');
+      showToast(response.message, 'success');
+      location.reload();
+    },
+    error: function(xhr) {
+      console.error('Error recording attendance:', xhr);
+      if (xhr.responseJSON && xhr.responseJSON.errors) {
+        const errors = xhr.responseJSON.errors;
+        let errorsHtml = '<div class="alert alert-danger"><ul>';
+        $.each(errors, function(key, value) {
+          errorsHtml += '<li>' + value[0] + '</li>';
+        });
+        errorsHtml += '</ul></div>';
+        $('#attendanceFormErrors').html(errorsHtml);
+      } else {
+        $('#attendanceFormErrors').html('<div class="alert alert-danger">An unexpected error occurred.</div>');
+      }
+      showToast('Error recording attendance.', 'danger');
+    }
+  });
+});
+
   });
 </script>
 {% endblock %}

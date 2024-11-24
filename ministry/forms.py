@@ -1,3 +1,4 @@
+#ministry/forms.py
 from django import forms
 from .models import Schedule, Minister, Ministry, Availability
 

@@ -19,7 +19,6 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from .models import Schedule, Minister, Ministry, Availability
 import json
-from schedule.models import Event
 import pandas as pd
 import logging
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -465,3 +464,4 @@ class ScheduleDeleteView(View):
         schedule = get_object_or_404(Schedule, pk=schedule_id)
         schedule.delete()
         return redirect('schedule_create')
+

@@ -1,6 +1,6 @@
 #attendace/views.py
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import MemberForm, LoginForm, SmallGroupForm, SmallGroupAttendanceForm, GivingForm
+from .forms import MemberForm, LoginForm, SmallGroupForm, SmallGroupAttendanceForm, GivingForm,  UserRegistrationForm
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -14,8 +14,12 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 import io
 import base64
+from django.db.models import Count
+from datetime import date
+from ministry.forms import MinisterForm
 from django.db.models.functions import ExtractWeek
-from django.contrib import messages
+from django.db.models import Sum
+
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.views.generic import ListView
@@ -44,6 +48,10 @@ from django.views.generic import TemplateView
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Count
+from django.db.models import IntegerField, CharField, Count, Value, Case, When, F, ExpressionWrapper
+from django.db.models.functions import ExtractYear, Now, ExtractMonth, ExtractDay
+
+from ministry.models import Schedule
 
 logger = logging.getLogger(__name__)
 import matplotlib
@@ -58,9 +66,15 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('home') 
+                # Redirect based on user type
+                if user.is_staff or user.is_superuser:
+                    return redirect('admin_home')
+                else:
+                    return redirect('user_dashboard')
             else:
                 messages.error(request, 'Invalid username or password')
+        else:
+            print(form.errors)  # For debugging
     else:
         form = LoginForm()
     return render(request, 'attendance/login.html', {'form': form})
@@ -107,7 +121,22 @@ def home(request):
     ).values('is_weekend').annotate(count=Count('id')).order_by('is_weekend')
 
     # Demographics Analysis
+    today = date.today()
     age_group_distribution = Member.objects.annotate(
+        age=ExpressionWrapper(
+            (Value(today.year) - ExtractYear('birthday')) -
+            Case(
+                When(
+                    Q(birthday__month__gt=today.month) |
+                    Q(birthday__month=today.month, birthday__day__gt=today.day),
+                    then=1
+                ),
+                default=0,
+                output_field=IntegerField()
+            ),
+            output_field=IntegerField()
+        )
+    ).annotate(
         age_group=Case(
             When(age__lte=12, then=Value('0-12')),
             When(age__gt=12, age__lte=18, then=Value('13-18')),
@@ -488,7 +517,7 @@ def get_member_details(request):
             "middle_name": member.middle_name or "",
             "last_name": member.last_name,
             "birthday": member.birthday.strftime('%Y-%m-%d') if member.birthday else "Not Available",
-            "age": member.age,
+         
             "fb_name": member.fb_name or "N/A"
         }
         return JsonResponse({'status': 'ok', 'member': data})
@@ -502,13 +531,15 @@ class MinisterListView(ListView):
     model = Minister
     template_name = 'ministries/ministry_list.html'
     context_object_name = 'ministers'
+# attendance/views.py
 
 class UserDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'attendance/user_dashboard.html'  # Path to the template
+    template_name = 'ministries/user_dashboard.html'  # Path to the template
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # Existing code
         # Fetch ministry schedules (you can adjust this to fit your data model)
         schedules = Schedule.objects.all().order_by('start_time')
 
@@ -518,9 +549,42 @@ class UserDashboardView(LoginRequiredMixin, TemplateView):
         # Add data to context
         context['schedules'] = schedules
         context['small_group_attendance'] = small_group_attendance
+
+        # Initialize total_giving and giving_records
+        total_giving = 0
+        giving_records = None
+
+        # Check if the user is associated with a Member profile
+        member = getattr(self.request.user, 'member_profile', None)
+        if member:
+            # Sum up all the giving records for this member
+            total_giving_member = Giving.objects.filter(member=member).aggregate(total=Sum('amount'))['total'] or 0
+            total_giving += total_giving_member
+
+            # Fetch giving records for the member
+            giving_records = Giving.objects.filter(member=member).order_by('-date')
+
+        # Check if the user is associated with a Minister profile
+        minister = getattr(self.request.user, 'minister_profile', None)
+        if minister:
+            # Sum up all the giving records for this minister
+            total_giving_minister = Giving.objects.filter(minister=minister).aggregate(total=Sum('amount'))['total'] or 0
+            total_giving += total_giving_minister
+
+            # Fetch giving records for the minister
+            giving_records = Giving.objects.filter(minister=minister).order_by('-date')
+
+        # If neither profile exists
+        if not member and not minister:
+            messages.warning(self.request, 'You are not associated with any profile. Please contact the administrator.')
+
+        # Add the total giving and giving records to the context
+        context['total_giving'] = total_giving
+        context['giving_records'] = giving_records
+
         return context
-    
-    
+
+
 def last_sunday_attendance_data(request):
     today = timezone.now().date()
     days_to_last_sunday = (today.weekday() + 1) % 7
@@ -613,29 +677,30 @@ def small_group_delete(request, pk):
 
 def is_ajax(request):
     return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
-
 @require_POST
 def record_attendance(request):
-    form = SmallGroupAttendanceForm(request.POST)
-    
+    form = SmallGroupAttendanceForm(request.POST, request.FILES)  # Include request.FILES
     if form.is_valid():
         small_group_id = request.POST.get('small_group_id')
         small_group = get_object_or_404(SmallGroup, pk=small_group_id)
         date = form.cleaned_data['date']
         attended = form.cleaned_data['attended']
+        image = form.cleaned_data.get('image')
 
         # Check if attendance for this small group and date already exists
         attendance, created = SmallGroupAttendance.objects.get_or_create(
             small_group=small_group,
             date=date,
-            defaults={'attended': attended}
+            defaults={'attended': attended, 'image': image}
         )
 
         if not created:
-            # Update the 'attended' status if the record already exists
+            # Update the 'attended' status and image if the record already exists
             attendance.attended = attended
+            if image:
+                attendance.image = image
             attendance.save()
-        
+
         if attended:
             # Automatically associate all members and ministers of the small group
             members = small_group.memberships.filter(member__isnull=False).values_list('member', flat=True)
@@ -655,7 +720,6 @@ def record_attendance(request):
         if is_ajax(request):
             return JsonResponse({'errors': form.errors}, status=400)
         else:
-            # Handle non-AJAX form submissions if necessary
             return redirect('small_group_list_create')
 
 @login_required
@@ -917,3 +981,129 @@ def download_individual_giving_pdf(request, giver_type, giver_id):
     # Finalize the PDF
     pdf_canvas.save()
     return response
+
+# attendance/views.py
+
+def register(request):
+    if request.method == 'POST':
+        user_form = UserRegistrationForm(request.POST)
+        if user_form.is_valid():
+            user = user_form.save(commit=False)
+            user.is_active = True
+            user.save()
+            # Create Member Profile with first and last name
+            Member.objects.create(user=user, first_name=user.first_name, last_name=user.last_name)
+            login(request, user)
+            messages.success(request, "Registration successful! Please complete your profile.")
+            return redirect('user_profile')
+        else:
+            messages.error(request, "Registration failed. Please correct the errors below.")
+    else:
+        user_form = UserRegistrationForm()
+    return render(request, 'attendance/registration.html', {'user_form': user_form})
+
+# attendance/views.py
+
+@login_required
+def user_profile(request):
+    user = request.user
+
+    # Determine if the user has a Member or Minister profile
+    if hasattr(user, 'member_profile'):
+        instance = user.member_profile
+        form_class = MemberForm
+    elif hasattr(user, 'minister_profile'):
+        instance = user.minister_profile
+        form_class = MinisterForm
+    else:
+        # Allow user to create a new Member profile
+        instance = None
+        form_class = MemberForm
+
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES, instance=instance)
+        if form.is_valid():
+            profile = form.save(commit=False)
+            profile.user = user
+            profile.save()
+            messages.success(request, "Your profile has been updated successfully.")
+            return redirect('user_profile')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        # Check if the user wants to edit their profile
+        edit_mode = request.GET.get('edit', False)
+        if edit_mode:
+            form = form_class(instance=instance)
+        else:
+            form = None  # No form needed when simply viewing the profile
+
+    return render(request, 'attendance/user_profile.html', {
+        'profile': instance,
+        'form': form,
+        'edit_mode': edit_mode,
+    })
+
+@login_required
+def user_mark_attendance(request):
+    user = request.user
+    services = Service.objects.all()
+
+    # Determine if user is a Member or Minister
+    if hasattr(user, 'member_profile'):
+        person = user.member_profile
+        person_type = 'member'
+    elif hasattr(user, 'minister_profile'):
+        person = user.minister_profile
+        person_type = 'minister'
+    else:
+        messages.error(request, "You do not have a profile to mark attendance.")
+        return redirect('user_dashboard')
+
+    if request.method == 'POST':
+        date_str = request.POST.get('attendance_date', timezone.now().date().isoformat())
+        service_id = request.POST.get('service')
+        if not service_id:
+            messages.error(request, "Please select a service.")
+        else:
+            try:
+                service = Service.objects.get(id=service_id)
+                status = True  # User is marking themselves present
+                date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+                if date > timezone.now().date():
+                    messages.error(request, "You cannot mark attendance for future dates.")
+                    return redirect('user_mark_attendance')
+
+                if person_type == 'member':
+                    Attendance.objects.update_or_create(
+                        member=person,
+                        date=date,
+                        service=service,
+                        defaults={'status': status}
+                    )
+                else:
+                    MinisterAttendance.objects.update_or_create(
+                        minister=person,
+                        date=date,
+                        service=service,
+                        defaults={'status': status}
+                    )
+                messages.success(request, f"Your attendance for {date} has been recorded.")
+                return redirect('user_mark_attendance')
+            except Service.DoesNotExist:
+                messages.error(request, "Selected service does not exist.")
+    else:
+        date = timezone.now().date()
+
+    # Fetch existing attendance records for the user
+    if person_type == 'member':
+        attendance_records = Attendance.objects.filter(member=person).order_by('-date')
+    else:
+        attendance_records = MinisterAttendance.objects.filter(minister=person).order_by('-date')
+
+    return render(request, 'attendance/user_mark_attendance.html', {
+        'services': services,
+        'date': date,
+        'attendance_records': attendance_records,
+    })

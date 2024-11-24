@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&88*od)_@*h=)^v5t&i@-awvawl7ro5!hapgr7+x40whpvvd*%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['https://django-bethany-9fc320f609cd.herokuapp.com/']
 
 
 # Application definition
@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'schedule',
     'crispy_forms',	
     'crispy_bootstrap5',
        'widget_tweaks',
@@ -60,6 +59,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'bethany_church.urls'
@@ -89,10 +90,10 @@ WSGI_APPLICATION = 'bethany_church.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'database_bethany',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'NAME': 'it7wrdzo6w9tdmjd',
+        'USER': 'pabi4xxteo7vc8ow',
+        'PASSWORD': 'clw8fwjcbz3yjv8v',
+        'HOST': 'co28d739i4m2sb7j.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
         'PORT': '3306',
     }
 }
@@ -161,6 +162,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
@@ -172,4 +176,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+
+import django_heroku
+django_heroku.settings(locals())
 

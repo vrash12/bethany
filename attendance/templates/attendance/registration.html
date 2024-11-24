@@ -1,0 +1,123 @@
+<!--attendance/templates/attendance/registration.html-->
+{% extends 'base.html' %}
+
+{% block title %}User Registration{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card mx-auto shadow-lg" style="max-width: 500px; border-radius: 20px;">
+        <div class="card-body p-5">
+            <h2 class="mb-4 text-center">Create Your Account</h2>
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <!-- User Information -->
+                {% for field in user_form %}
+                <div class="form-group position-relative mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {% if field.field.widget.input_type == "checkbox" %}
+                    <div class="form-check">
+                        {{ field }}
+                        <label class="form-check-label" for="{{ field.id_for_label }}"></label>
+                    </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+
+                    {% if field.help_text %}
+                    <small class="form-text text-muted">
+                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="{{ field.help_text }}"></i>
+                    </small>
+                    {% endif %}
+
+                    {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" id="loadingSpinner"></span>
+                        Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS -->
+<style>
+    body {
+    
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .card {
+        background-color: #ffffffee;
+    }
+    .form-control {
+        border-radius: 10px;
+    }
+    .btn-primary {
+        background-color: #cb9311;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem;
+    }
+    .btn-primary:hover {
+        background-color: #5b0fa3;
+    }
+    .form-label {
+        font-weight: bold;
+    }
+    .invalid-feedback {
+        color: #e3342f;
+    }
+    .form-text.text-muted {
+        color: #6c757d;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        // Real-time validation
+        form.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('input', () => {
+                if (input.checkValidity()) {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                }
+            });
+        });
+
+        // Show loading spinner on form submission
+        form.addEventListener('submit', function (e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+                form.classList.add('was-validated');
+            } else {
+                loadingSpinner.classList.remove('d-none');
+            }
+        });
+
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

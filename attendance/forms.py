@@ -4,18 +4,19 @@ from .models import Member, Attendance, Service, SmallGroup, SmallGroupMembershi
 from ministry.models import Minister
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 class MemberForm(forms.ModelForm):
     class Meta:
         model = Member
-        fields = ['first_name', 'last_name', 'middle_name', 'birthday', 'age', 'fb_name', 'invited_by', 'address', 'contact_number', 'is_youth', 'school', 'course', 'is_newcomer', 'gender']
+        fields = ['first_name', 'last_name', 'middle_name', 'birthday', 'fb_name', 'invited_by', 'address', 'contact_number', 'is_youth', 'school', 'course', 'is_newcomer', 'gender']
 
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'middle_name': forms.TextInput(attrs={'class': 'form-control'}),
             'birthday': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'age': forms.NumberInput(attrs={'class': 'form-control'}),
             'fb_name': forms.TextInput(attrs={'class': 'form-control'}),
             'invited_by': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
@@ -26,6 +27,11 @@ class MemberForm(forms.ModelForm):
             'is_newcomer': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'gender' : forms.Select(attrs={'class': 'form-control'}),
         }
+        def __init__(self, *args, **kwargs):
+            super(MemberForm, self).__init__(*args, **kwargs)
+            if self.instance and self.instance.user:
+                self.fields['first_name'].initial = self.instance.user.first_name
+                self.fields['last_name'].initial = self.instance.user.last_name
 
 class AttendanceForm(forms.ModelForm):
     class Meta:
@@ -121,12 +127,13 @@ class SmallGroupMembershipForm(forms.ModelForm):
 class SmallGroupAttendanceForm(forms.ModelForm):
     class Meta:
         model = SmallGroupAttendance
-        fields = ['date', 'attended']  # Only include date and attended fields
+        fields = ['date', 'attended', 'image']  # Include the image field
         widgets = {
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'attended': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),  # New widget
         }
-        
+
 
 class GivingForm(forms.ModelForm):
     GIVER_CHOICES = [
@@ -153,3 +160,14 @@ class GivingForm(forms.ModelForm):
             'purpose',
             'notes',
         )
+
+
+
+class UserRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=150, required=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2')

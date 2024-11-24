@@ -1,0 +1,137 @@
+<!-- attendance/templates/attendance/user_profile.html -->
+
+{% extends 'base.html' %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Profile Card Styles */
+    .profile-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        background-color: #ffffff;
+        padding: 20px;
+    }
+    .profile-card .btn-primary {
+        background-color: #FF8748;
+        border-color: #FF8748;
+    }
+    .profile-card .btn-primary:hover {
+        background-color: #e06f34;
+        border-color: #e06f34;
+    }
+    .profile-card a {
+        color: #FF8748;
+    }
+    .profile-card a:hover {
+        color: #e06f34;
+        text-decoration: none;
+    }
+    .profile-heading {
+        font-family: 'Playfair Display', serif;
+        font-weight: bold;
+        color: #333333;
+    }
+    .form-control, .form-check-input, .form-select {
+        border-radius: 5px;
+    }
+    .profile-info {
+        font-size: 16px;
+    }
+    .profile-info dt {
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card profile-card w-100" style="max-width: 800px;">
+        <h2 class="mb-4 text-center profile-heading">User Profile</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form %}
+            <!-- Edit Mode -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a href="{% url 'user_profile' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        {% else %}
+            <!-- Display Mode -->
+            <dl class="row profile-info">
+                <dt class="col-sm-4">First Name:</dt>
+                <dd class="col-sm-8">{{ profile.first_name }}</dd>
+
+                <dt class="col-sm-4">Last Name:</dt>
+                <dd class="col-sm-8">{{ profile.last_name }}</dd>
+
+                <dt class="col-sm-4">Middle Name:</dt>
+                <dd class="col-sm-8">{{ profile.middle_name|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Birthday:</dt>
+                <dd class="col-sm-8">{{ profile.birthday|date:"M d, Y"|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Gender:</dt>
+                <dd class="col-sm-8">
+                    {% if profile.gender == 'M' %}Male
+                    {% elif profile.gender == 'F' %}Female
+                    {% else %}-{% endif %}
+                </dd>
+
+                <dt class="col-sm-4">Contact Number:</dt>
+                <dd class="col-sm-8">{{ profile.contact_number|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Address:</dt>
+                <dd class="col-sm-8">{{ profile.address|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Facebook Name:</dt>
+                <dd class="col-sm-8">{{ profile.fb_name|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Invited By:</dt>
+                <dd class="col-sm-8">{{ profile.invited_by|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Is Youth:</dt>
+                <dd class="col-sm-8">{{ profile.is_youth|yesno:"Yes,No" }}</dd>
+
+                <dt class="col-sm-4">School:</dt>
+                <dd class="col-sm-8">{{ profile.school|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Course:</dt>
+                <dd class="col-sm-8">{{ profile.course|default:"-" }}</dd>
+
+                <dt class="col-sm-4">Is Newcomer:</dt>
+                <dd class="col-sm-8">{{ profile.is_newcomer|yesno:"Yes,No" }}</dd>
+            </dl>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a href="{% url 'user_profile' %}?edit=true" >Edit Profile</a>
+
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

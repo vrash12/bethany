@@ -1,4 +1,4 @@
-<!-- templates/ministries/user_dashboard.html -->
+<!-- ministry/templates/ministries/user_dashboard.html -->
 {% extends 'base.html' %}
 
 {% load static %}
@@ -206,7 +206,47 @@
             </div>
         </div>
     </div>
+    {% if user.is_authenticated %}
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Your Total Giving</h3>
+                </div>
+                <div class="card-body">
+                    <p>Total Tithes and Donations: <strong>&#8369;{{ total_giving|floatformat:2 }}</strong></p>
 
+                    {% if giving_records %}
+                    <h4>Your Giving History</h4>
+                    <table class="table table-striped mt-4">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Purpose</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in giving_records %}
+                            <tr>
+                                <td>{{ record.date|date:"M d, Y" }}</td>
+                                <td>&#8369;{{ record.amount|floatformat:2 }}</td>
+                                <td>{{ record.get_purpose_display }}</td>
+                                <td>{{ record.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>You have no giving records.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
      <!-- Small Group Attendance Section -->
     <div class="row mb-5">
         <div class="col-md-12">
@@ -260,14 +300,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Include jQuery and DataTables if not already included -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Include DataTables JS -->
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<!-- Include Bootstrap JS and dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Include Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -276,81 +308,60 @@
             responsive: true,
         });
 
-        // Function to fetch and display schedules
         function fetchSchedules() {
-            const date = document.getElementById('dateSelect').value;
-            const ministry = document.getElementById('ministrySelect').value;
+    const date = document.getElementById('dateSelect').value;
+    const ministry = document.getElementById('ministrySelect').value;
 
-            // Show loading indicator
-            const tableBody = document.querySelector('#filteredScheduleTable tbody');
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+    // Show loading indicator
+    const tableBody = document.querySelector('#filteredScheduleTable tbody');
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
 
-            // Make AJAX request
-            fetch(`/ajax/get_schedule/?date=${date}&ministry=${ministry}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Destroy the existing DataTable before updating
-                    filteredScheduleTable.clear().destroy();
+    // Make AJAX request
+    fetch(`/ajax/get_schedule/?date=${date}&ministry=${ministry}`)
+        .then(response => {
+            if (!response.ok) {
+                // Handle HTTP errors
+                console.error('Error fetching schedules:', response.statusText);
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No schedules found for the selected date.</td></tr>';
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
 
-                    // Update the UI with the data
-                    tableBody.innerHTML = '';
+            // Clear the DataTable
+            filteredScheduleTable.clear();
 
-                    if (data.scheduled_tasks.length > 0) {
-                        data.scheduled_tasks.forEach(task => {
-                            const row = `
-                                <tr>
-                                    <td><a href="#" class="minister-link" data-minister-id="${task.minister_id}">${task.minister}</a></td>
-                                    <td>${task.ministry}</td>
-                                    <td>${task.location}</td>
-                                    <td>${task.duties}</td>
-                                    <td>${task.start_time}</td>
-                                    <td>${task.end_time}</td>
-                                </tr>
-                            `;
-                            tableBody.innerHTML += row;
-                        });
-                    } else {
-                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No schedules found for the selected date.</td></tr>';
-                    }
-
-                    // Re-initialize DataTable
-                    filteredScheduleTable = $('#filteredScheduleTable').DataTable({
-                        responsive: true,
-                    });
-
-                    // Add click event listeners to minister links
-                    $('#filteredScheduleTable').on('click', '.minister-link', function(event) {
-                        event.preventDefault();
-                        const ministerId = $(this).data('minister-id');
-
-                        // Make AJAX request to get minister details
-                        fetch(`/minister_detail/${ministerId}/`)
-                            .then(response => response.json())
-                            .then(data => {
-                                // Populate modal with minister details
-                                $('#ministerModal .modal-title').text(`${data.first_name} ${data.last_name}`);
-                                $('#ministerModal .modal-body').html(`
-                                    <p>Email: ${data.email}</p>
-                                    <p>Position: ${data.position}</p>
-                                    <p>Phone Number: ${data.phone_number}</p>
-                                    <p>Address: ${data.address}</p>
-                                `);
-                                // Show the modal
-                                $('#ministerModal').modal('show');
-                            })
-                            .catch(error => {
-                                console.error('Error fetching minister details:', error);
-                            });
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching schedules:', error);
-                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error fetching data.</td></tr>';
+            if (data.scheduled_tasks.length > 0) {
+                // Add new data to the DataTable
+                data.scheduled_tasks.forEach(task => {
+                    filteredScheduleTable.row.add([
+                        task.minister,
+                        task.ministry,
+                        task.location,
+                        task.duties,
+                        task.start_time,
+                        task.end_time
+                    ]);
                 });
-        }
+            } else {
+                // Display "No schedules" message
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No schedules found for the selected date.</td></tr>';
+            }
 
-        // Add event listeners
-        const dateSelect = document.getElementById('dateSelect');
+            // Redraw the DataTable
+            filteredScheduleTable.draw();
+        })
+        .catch(error => {
+            console.error('Error fetching schedules:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">An error occurred while fetching schedules. Please try again later.</td></tr>';
+        });
+}
+
+        
+
+const dateSelect = document.getElementById('dateSelect');
         const ministrySelect = document.getElementById('ministrySelect');
         const filterButton = document.getElementById('filterButton');
 

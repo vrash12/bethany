@@ -1,11 +1,12 @@
 #attendance/models.py
 from django.db import models
 from django.utils import timezone
-from cryptography.fernet import Fernet
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from ministry.models import Minister
 from django.contrib.auth.models import User
+from datetime import date
 
 
 class Service(models.Model):
@@ -32,8 +33,7 @@ class Member(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     middle_name = models.CharField(max_length=255, blank=True, null=True)
-    birthday = models.DateField()
-    age = models.IntegerField()
+    birthday = models.DateField(null=True, blank=True)
     fb_name = models.CharField(max_length=255, blank=True, null=True)
     invited_by = models.CharField(max_length=255, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
@@ -45,8 +45,24 @@ class Member(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='member_profile', null=True, blank=True)
 
+    @property
+    def age(self):
+        if self.birthday:
+            today = date.today()
+            return today.year - self.birthday.year - ((today.month, today.day) < (self.birthday.month, self.birthday.day))
+        return None
+
     def __str__(self):
         return f"{self.first_name} {self.middle_name} {self.last_name}"
+    
+    def save(self, *args, **kwargs):
+        # Update the associated User's first and last name
+        if self.user:
+            self.user.first_name = self.first_name
+            self.user.last_name = self.last_name
+            self.user.save()
+        super(Member, self).save(*args, **kwargs)
+
 
 
 class Attendance(models.Model):
@@ -101,10 +117,10 @@ class SmallGroupAttendance(models.Model):
     members = models.ManyToManyField(Member, blank=True)
     ministers = models.ManyToManyField(Minister, blank=True)
     attended = models.BooleanField(default=False)
+    image = models.ImageField(upload_to='small_group_attendance/', null=True, blank=True)  # New field
 
     def __str__(self):
         return f"{self.small_group.name} - {self.date} - {'Attended' if self.attended else 'Absent'}"
-
 
 
 class Giving(models.Model):
