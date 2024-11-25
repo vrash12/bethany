@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&88*od)_@*h=)^v5t&i@-awvawl7ro5!hapgr7+x40whpvvd*%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['https://django-bethany-9fc320f609cd.herokuapp.com/']
 
@@ -181,4 +181,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 import django_heroku
 django_heroku.settings(locals())
+
+import dj_database_url
+
+DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
 
