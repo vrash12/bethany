@@ -90,7 +90,7 @@ else:
     # Default to local MySQL if JAWSDB_URL is not set (useful for local development)
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'database_bethany',
             'USER': 'root',
             'PASSWORD': '',
