@@ -984,24 +984,38 @@ def download_individual_giving_pdf(request, giver_type, giver_id):
 
 # attendance/views.py
 
+
 def register(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
         if user_form.is_valid():
-            user = user_form.save(commit=False)
-            user.is_active = True
-            user.save()
-            # Create Member Profile with first and last name
-            Member.objects.create(user=user, first_name=user.first_name, last_name=user.last_name)
-            login(request, user)
-            messages.success(request, "Registration successful! Please complete your profile.")
-            return redirect('user_profile')
+            try:
+                user = user_form.save(commit=False)
+                user.is_active = True
+                user.save()
+                
+                # Ensure first_name and last_name are set
+                first_name = user_form.cleaned_data.get('first_name', '')
+                last_name = user_form.cleaned_data.get('last_name', '')
+                
+                # Create Member Profile with first and last name
+                Member.objects.create(user=user, first_name=first_name, last_name=last_name)
+                
+                login(request, user)
+                messages.success(request, "Registration successful! Please complete your profile.")
+                return redirect('user_profile')
+            except IntegrityError as e:
+                messages.error(request, f"Registration failed: {str(e)}")
+                logger.error(f"IntegrityError during registration: {str(e)}")
+            except Exception as e:
+                messages.error(request, "An unexpected error occurred during registration.")
+                logger.error(f"Unexpected error during registration: {str(e)}")
         else:
             messages.error(request, "Registration failed. Please correct the errors below.")
+            logger.error(f"Form errors: {user_form.errors}")
     else:
         user_form = UserRegistrationForm()
     return render(request, 'attendance/registration.html', {'user_form': user_form})
-
 # attendance/views.py
 
 @login_required
