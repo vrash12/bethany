@@ -50,7 +50,8 @@ from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models import IntegerField, CharField, Count, Value, Case, When, F, ExpressionWrapper
 from django.db.models.functions import ExtractYear, Now, ExtractMonth, ExtractDay
-
+#integrityerror
+from django.db import IntegrityError
 from ministry.models import Schedule
 
 logger = logging.getLogger(__name__)

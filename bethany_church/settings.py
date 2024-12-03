@@ -1,3 +1,6 @@
+import pymysql
+pymysql.install_as_MySQLdb()
+
 import os
 from pathlib import Path
 import dj_database_url
@@ -12,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -----------------------------
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'vr123456')
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -90,11 +94,11 @@ else:
     # Default to local MySQL if JAWSDB_URL is not set (useful for local development)
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'database_bethany',
-            'USER': 'root',
-            'PASSWORD': '',
-            'HOST': 'localhost',
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'it7wrdzo6w9tdmjd',
+            'USER': 'pabi4xxteo7vc8ow',
+            'PASSWORD': 'clw8fwjcbz3yjv8v',
+            'HOST': 'co28d739i4m2sb7j.cbetxkdyhwsb.us-east-1.rds.amazonaws.com',
             'PORT': '3306',
         }
     }
